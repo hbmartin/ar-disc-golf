@@ -1,107 +1,93 @@
 <script lang="ts">
   import LocationService from './lib/LocationService.svelte'
+  import MapGame from './lib/MapGame.svelte'
   
   let locationServiceRef: LocationService;
-  let showLocationDetails = $state(false);
+  let currentView = $state<'home' | 'game'>('home');
+
+  const startGame = () => {
+    currentView = 'game';
+  };
+
+  const goHome = () => {
+    currentView = 'home';
+  };
 </script>
 
-<main>
-  <header>
-    <h1>🥏 AR Disc Golf</h1>
-    <p class="subtitle">Augmented Reality Disc Golf Experience</p>
-  </header>
+{#if currentView === 'home'}
+  <main>
+    <header>
+      <h1>🥏 AR Disc Golf</h1>
+      <p class="subtitle">Augmented Reality Disc Golf Experience</p>
+    </header>
 
-  <div class="content">
-    <section class="location-section">
-      <h2>📍 Your Location</h2>
-      <LocationService bind:this={locationServiceRef} />
-      
-      <div class="location-actions">
-        <button 
-          onclick={() => showLocationDetails = !showLocationDetails}
-          class="toggle-details-btn"
-        >
-          {showLocationDetails ? 'Hide' : 'Show'} Location Details
-        </button>
-      </div>
+    <div class="content">
+      <section class="location-section">
+        <h2>📍 Your Location</h2>
+        <LocationService bind:this={locationServiceRef} />
+        
+        <div class="location-actions">
+          <button 
+            onclick={startGame}
+            class="start-game-btn"
+            disabled={false}
+          >
+            🎮 Start Game
+          </button>
+          {#if locationServiceRef?.error}
+            <p class="demo-note">
+              Demo mode available - click Start Game to test with sample location
+            </p>
+          {/if}
+        </div>
+      </section>
 
-      {#if showLocationDetails && locationServiceRef?.location}
-        <div class="location-details">
-          <h3>Detailed Location Information</h3>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <span class="detail-label">Decimal Degrees:</span>
-              <span class="detail-value">
-                {locationServiceRef.location.latitude.toFixed(8)}, {locationServiceRef.location.longitude.toFixed(8)}
-              </span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">GPS Accuracy:</span>
-              <span class="detail-value">±{Math.round(locationServiceRef.location.accuracy)} meters</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Timestamp:</span>
-              <span class="detail-value">{new Date(locationServiceRef.location.timestamp).toLocaleString()}</span>
-            </div>
-            <div class="detail-item">
-              <span class="detail-label">Maps Link:</span>
-              <a 
-                href={`https://www.google.com/maps?q=${locationServiceRef.location.latitude},${locationServiceRef.location.longitude}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="maps-link"
-              >
-                View on Google Maps
-              </a>
-            </div>
+      <section class="ar-section">
+        <h2>🎯 AR Features</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>AR Camera</h3>
+            <p>Use your device camera to view augmented reality disc golf targets and obstacles.</p>
+            <button class="feature-btn" disabled>Coming Soon</button>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Target Tracking</h3>
+            <p>Track your throws and measure distances to targets using GPS and AR technology.</p>
+            <button class="feature-btn" disabled>Coming Soon</button>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Score Tracking</h3>
+            <p>Keep track of your scores and improve your disc golf game with detailed analytics.</p>
+            <button class="feature-btn" disabled>Coming Soon</button>
           </div>
         </div>
-      {/if}
-    </section>
+      </section>
 
-    <section class="ar-section">
-      <h2>🎯 AR Features</h2>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="feature-icon">📱</div>
-          <h3>AR Camera</h3>
-          <p>Use your device camera to view augmented reality disc golf targets and obstacles.</p>
-          <button class="feature-btn" disabled>Coming Soon</button>
+      <section class="info-section">
+        <h2>ℹ️ About Location Services</h2>
+        <div class="info-content">
+          <p>
+            This app uses your device's GPS to provide location-based features for disc golf. 
+            Your location data is only used locally and is not stored or transmitted to any servers.
+          </p>
+          <ul>
+            <li>📍 Accurate positioning for AR features</li>
+            <li>📏 Distance measurements to targets</li>
+            <li>🗺️ Course mapping and navigation</li>
+            <li>🔒 Privacy-focused - data stays on your device</li>
+          </ul>
         </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">🎯</div>
-          <h3>Target Tracking</h3>
-          <p>Track your throws and measure distances to targets using GPS and AR technology.</p>
-          <button class="feature-btn" disabled>Coming Soon</button>
-        </div>
-        
-        <div class="feature-card">
-          <div class="feature-icon">📊</div>
-          <h3>Score Tracking</h3>
-          <p>Keep track of your scores and improve your disc golf game with detailed analytics.</p>
-          <button class="feature-btn" disabled>Coming Soon</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="info-section">
-      <h2>ℹ️ About Location Services</h2>
-      <div class="info-content">
-        <p>
-          This app uses your device's GPS to provide location-based features for disc golf. 
-          Your location data is only used locally and is not stored or transmitted to any servers.
-        </p>
-        <ul>
-          <li>📍 Accurate positioning for AR features</li>
-          <li>📏 Distance measurements to targets</li>
-          <li>🗺️ Course mapping and navigation</li>
-          <li>🔒 Privacy-focused - data stays on your device</li>
-        </ul>
-      </div>
-    </section>
-  </div>
-</main>
+      </section>
+    </div>
+  </main>
+{:else if currentView === 'game'}
+  <MapGame onBack={goHome} />
+{/if}
 
 <style>
   main {
@@ -161,77 +147,41 @@
     text-align: center;
   }
 
-  .toggle-details-btn {
+  .start-game-btn {
     background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     border: none;
     color: white;
-    padding: 12px 24px;
+    padding: 15px 30px;
     border-radius: 25px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1.1em;
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+    min-width: 160px;
   }
 
-  .toggle-details-btn:hover {
+  .start-game-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
   }
 
-  .location-details {
-    margin-top: 25px;
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 25px;
-    border: 1px solid #e2e8f0;
+  .start-game-btn:disabled {
+    background: #cbd5e0;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
   }
 
-  .location-details h3 {
-    margin: 0 0 20px 0;
-    color: #2d3748;
-    font-size: 1.3em;
-  }
-
-  .detail-grid {
-    display: grid;
-    gap: 15px;
-  }
-
-  .detail-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .detail-item:last-child {
-    border-bottom: none;
-  }
-
-  .detail-label {
-    font-weight: 600;
+  .demo-note {
+    margin-top: 10px;
+    font-size: 0.9em;
     color: #4a5568;
+    text-align: center;
+    font-style: italic;
   }
 
-  .detail-value {
-    font-family: 'Courier New', monospace;
-    color: #2d3748;
-    font-weight: 500;
-  }
 
-  .maps-link {
-    color: #4299e1;
-    text-decoration: none;
-    font-weight: 600;
-    transition: color 0.2s ease;
-  }
-
-  .maps-link:hover {
-    color: #3182ce;
-    text-decoration: underline;
-  }
 
   .feature-grid {
     display: grid;
@@ -324,12 +274,6 @@
 
     .feature-grid {
       grid-template-columns: 1fr;
-    }
-
-    .detail-item {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 5px;
     }
   }
 </style>
