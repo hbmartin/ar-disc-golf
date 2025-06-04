@@ -3,7 +3,7 @@
   import maplibregl from 'maplibre-gl';
   import 'maplibre-gl/dist/maplibre-gl.css';
 
-  export let onBack: () => void;
+  let { onBack, gameId }: { onBack: () => void; gameId: string } = $props();
 
   let mapContainer: HTMLDivElement;
   let map: maplibregl.Map;
@@ -192,18 +192,7 @@
     <div bind:this={mapContainer} class="map"></div>
   </div>
 
-  <div class="game-info">
-    <div class="info-card">
-      <h3>🎮 Game Features</h3>
-      <ul>
-        <li>📍 Real-time location tracking</li>
-        <li>🏔️ OpenStreetMap terrain tiles</li>
-        <li>🗺️ Interactive map navigation</li>
-        <li>🎯 Target placement (coming soon)</li>
-        <li>📊 Score tracking (coming soon)</li>
-      </ul>
-    </div>
-  </div>
+
 </div>
 
 <style>
@@ -365,38 +354,7 @@
     box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
   }
 
-  .game-info {
-    background: white;
-    border-top: 1px solid #e2e8f0;
-    padding: 20px;
-  }
 
-  .info-card {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
-  .info-card h3 {
-    margin: 0 0 15px 0;
-    color: #2d3748;
-    font-size: 1.2em;
-    font-weight: 600;
-  }
-
-  .info-card ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-  }
-
-  .info-card li {
-    padding: 8px 0;
-    color: #4a5568;
-    font-size: 0.95em;
-  }
 
   /* Mobile optimizations */
   @media (max-width: 768px) {
@@ -423,13 +381,7 @@
       margin: 15px;
     }
 
-    .game-info {
-      padding: 15px;
-    }
 
-    .info-card ul {
-      grid-template-columns: 1fr;
-    }
   }
 
   /* Ensure map controls are accessible on mobile */
