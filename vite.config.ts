@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [svelte()],
   server: {
     host: '0.0.0.0',
-    port: 54670,
+    port: 53543,
     allowedHosts: true,
     headers: {
       'Cross-Origin-Embedder-Policy': 'cross-origin',
