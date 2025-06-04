@@ -16,35 +16,9 @@
   const initializeMap = (lat: number, lng: number) => {
     if (!mapContainer) return;
 
-    // Create a custom style using OpenStreetMap terrain tiles
-    const terrainStyle = {
-      version: 8,
-      sources: {
-        'opentopomap': {
-          type: 'raster',
-          tiles: [
-            'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
-            'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
-            'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
-        }
-      },
-      layers: [
-        {
-          id: 'opentopomap',
-          type: 'raster',
-          source: 'opentopomap',
-          minzoom: 0,
-          maxzoom: 18
-        }
-      ]
-    };
-
     map = new maplibregl.Map({
       container: mapContainer,
-      style: terrainStyle,
+      style: 'https://tiles.openfreemap.org/styles/liberty',
       center: [lng, lat],
       zoom: 16,
       pitch: 0,
@@ -53,7 +27,7 @@
 
     map.on('load', () => {
       isLoading = false;
-      
+
       // Add user location marker
       userMarker = new maplibregl.Marker({
         color: '#4facfe',
@@ -64,7 +38,7 @@
 
       // Add navigation controls
       map.addControl(new maplibregl.NavigationControl(), 'top-right');
-      
+
       // Add geolocate control
       const geolocateControl = new maplibregl.GeolocateControl({
         positionOptions: {
@@ -73,7 +47,7 @@
         trackUserLocation: true,
         showUserHeading: true
       });
-      
+
       map.addControl(geolocateControl, 'top-right');
     });
 
@@ -86,10 +60,10 @@
 
   const updateUserPosition = (lat: number, lng: number) => {
     currentPosition = { lat, lng };
-    
+
     if (userMarker && map) {
       userMarker.setLngLat([lng, lat]);
-      
+
       // Smoothly animate to new position
       map.easeTo({
         center: [lng, lat],
