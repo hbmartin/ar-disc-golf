@@ -1,6 +1,64 @@
-# Svelte + TS + Vite
+# 🥏 AR Disc Golf
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+An Augmented Reality Disc Golf Experience built with Svelte, TypeScript, and Vite, featuring GPS location tracking and AR capabilities.
+
+## Features
+
+### 🌍 GPS Location Services
+- **Real-time Location Tracking**: Uses browser's Geolocation API for precise positioning
+- **Permission Handling**: Graceful permission requests with user-friendly error messages
+- **High Accuracy Mode**: Optimized for outdoor GPS accuracy
+- **Privacy-Focused**: Location data stays on your device and is never transmitted
+
+### 📱 User Interface
+- **Modern Design**: Beautiful gradient-based UI with responsive layout
+- **Interactive Elements**: Toggle location details, retry functionality, and refresh options
+- **Error Handling**: Clear error messages with step-by-step resolution guidance
+- **Mobile Optimized**: Works seamlessly on both desktop and mobile devices
+
+### 🎯 AR Ready
+- **A-Frame Integration**: Built with A-Frame for future AR features
+- **AR.js Support**: Ready for marker-based and location-based AR
+- **Extensible Architecture**: Modular design for easy feature additions
+
+## Quick Start
+
+### Installation
+```bash
+npm install
+```
+
+### Development
+```bash
+npm run dev
+```
+
+### Build for Production
+```bash
+npm run build
+```
+
+### Preview Production Build
+```bash
+npm run preview
+```
+
+## Location Features
+
+The app includes comprehensive GPS location functionality:
+
+1. **Automatic Location Detection**: Requests location permission on first visit
+2. **Error Handling**: Graceful handling of permission denied, timeout, and unavailable scenarios
+3. **Retry Mechanism**: Easy retry functionality with clear instructions
+4. **Detailed Information**: Shows coordinates, accuracy, timestamp, and maps integration
+5. **Privacy Focused**: All location data stays on your device
+
+### Supported Browsers
+- Chrome/Chromium (full support)
+- Firefox (full support)
+- Safari (geolocation support)
+- Edge (full support)
+- Mobile browsers (responsive design)
 
 ## Recommended IDE Setup
 
