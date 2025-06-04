@@ -1,6 +1,6 @@
 # 🥏 AR Disc Golf
 
-An Augmented Reality Disc Golf Experience built with Svelte, TypeScript, and Vite, featuring GPS location tracking and AR capabilities.
+An Augmented Reality Disc Golf Experience built with Svelte, TypeScript, and Vite, featuring GPS location tracking and AR capabilities. Users play courses using GPS tracking and augmented reality guidance.
 
 ## Features
 
@@ -16,7 +16,7 @@ An Augmented Reality Disc Golf Experience built with Svelte, TypeScript, and Vit
 - **Error Handling**: Clear error messages with step-by-step resolution guidance
 - **Mobile Optimized**: Works seamlessly on both desktop and mobile devices
 
-### 🎯 AR Ready
+### 🎯 AR Gameplay: Play courses with AR arrow guidance and map navigation
 - **A-Frame Integration**: Built with A-Frame for future AR features
 - **AR.js Support**: Ready for marker-based and location-based AR
 - **Extensible Architecture**: Modular design for easy feature additions
@@ -55,18 +55,12 @@ The app includes comprehensive GPS location functionality:
 
 ### Supported Browsers
 - Chrome/Chromium (full support)
-- Firefox (full support)
-- Safari (geolocation support)
-- Edge (full support)
+- Safari (full support)
 - Mobile browsers (responsive design)
 
 ## Recommended IDE Setup
 
 [VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
 
 ## Technical considerations
 
