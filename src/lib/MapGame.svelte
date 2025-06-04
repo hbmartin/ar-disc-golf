@@ -16,9 +16,35 @@
   const initializeMap = (lat: number, lng: number) => {
     if (!mapContainer) return;
 
+    // Create a custom style using OpenStreetMap terrain tiles
+    const terrainStyle = {
+      version: 8,
+      sources: {
+        'opentopomap': {
+          type: 'raster',
+          tiles: [
+            'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
+            'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
+            'https://c.tile.opentopomap.org/{z}/{x}/{y}.png'
+          ],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+        }
+      },
+      layers: [
+        {
+          id: 'opentopomap',
+          type: 'raster',
+          source: 'opentopomap',
+          minzoom: 0,
+          maxzoom: 18
+        }
+      ]
+    };
+
     map = new maplibregl.Map({
       container: mapContainer,
-      style: 'https://demotiles.maplibre.org/style.json', // Free demo tiles
+      style: terrainStyle,
       center: [lng, lat],
       zoom: 16,
       pitch: 0,
@@ -160,7 +186,7 @@
     <button class="back-btn" onclick={onBack}>
       ← Back
     </button>
-    <h1>🎯 Disc Golf Map</h1>
+    <h1>🎯 Disc Golf Terrain Map</h1>
     <div class="status">
       {#if currentPosition}
         <span class="location-indicator">📍 Live</span>
@@ -197,6 +223,7 @@
       <h3>🎮 Game Features</h3>
       <ul>
         <li>📍 Real-time location tracking</li>
+        <li>🏔️ OpenStreetMap terrain tiles</li>
         <li>🗺️ Interactive map navigation</li>
         <li>🎯 Target placement (coming soon)</li>
         <li>📊 Score tracking (coming soon)</li>
