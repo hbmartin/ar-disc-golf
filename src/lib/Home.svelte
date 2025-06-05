@@ -1,15 +1,15 @@
 <script lang="ts">
-  import LocationService from './LocationService.svelte'
-  import { generateGameId, saveGameId } from './utils.ts'
-  import { push } from 'svelte-spa-router'
-  
-  let locationServiceRef: LocationService;
+import { push } from "svelte-spa-router";
+import type LocationService from "./LocationService.svelte";
+import { generateGameId, saveGameId } from "./utils.ts";
 
-  const startGame = () => {
-    const gameId = generateGameId();
-    saveGameId(gameId);
-    push(`/game/${gameId}`);
-  };
+let locationServiceRef: LocationService;
+
+const startGame = () => {
+	const gameId = generateGameId();
+	saveGameId(gameId);
+	push(`/game/${gameId}`);
+};
 </script>
 
 <main>
@@ -22,9 +22,9 @@
     <section class="location-section">
       <h2>📍 Your Location</h2>
       <LocationService bind:this={locationServiceRef} />
-      
+
       <div class="location-actions">
-        <button 
+        <button
           onclick={startGame}
           class="start-game-btn"
           disabled={false}
@@ -48,14 +48,14 @@
           <p>Use your device camera to view augmented reality disc golf targets and obstacles.</p>
           <button class="feature-btn" disabled>Coming Soon</button>
         </div>
-        
+
         <div class="feature-card">
           <div class="feature-icon">🎯</div>
           <h3>Target Tracking</h3>
           <p>Track your throws and measure distances to targets using GPS and AR technology.</p>
           <button class="feature-btn" disabled>Coming Soon</button>
         </div>
-        
+
         <div class="feature-card">
           <div class="feature-icon">📊</div>
           <h3>Score Tracking</h3>
@@ -69,7 +69,7 @@
       <h2>ℹ️ About Location Services</h2>
       <div class="info-content">
         <p>
-          This app uses your device's GPS to provide location-based features for disc golf. 
+          This app uses your device's GPS to provide location-based features for disc golf.
           Your location data is only used locally and is not stored or transmitted to any servers.
         </p>
         <ul>

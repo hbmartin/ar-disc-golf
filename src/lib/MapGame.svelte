@@ -1,158 +1,160 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import maplibregl from 'maplibre-gl';
-  import 'maplibre-gl/dist/maplibre-gl.css';
+import maplibregl from "maplibre-gl";
+import { onDestroy, onMount } from "svelte";
+import "maplibre-gl/dist/maplibre-gl.css";
 
-  let { onBack, gameId }: { onBack: () => void; gameId: string } = $props();
+const { onBack, gameId }: { onBack: () => void; gameId: string } = $props();
 
-  let mapContainer: HTMLDivElement;
-  let map: maplibregl.Map;
-  let userMarker: maplibregl.Marker | null = null;
-  let watchId: number | null = null;
-  let currentPosition: { lat: number; lng: number } | null = null;
-  let locationError: string | null = null;
-  let isLoading = true;
+let mapContainer: HTMLDivElement;
+let map: maplibregl.Map;
+let userMarker: maplibregl.Marker | null = null;
+let watchId: number | null = null;
+let currentPosition: { lat: number; lng: number } | null = $state(null);
+let locationError: string | null = $state(null);
+let isLoading = $state(true);
 
-  const initializeMap = (lat: number, lng: number) => {
-    if (!mapContainer) return;
+const initializeMap = (lat: number, lng: number) => {
+	if (!mapContainer) return;
 
-    map = new maplibregl.Map({
-      container: mapContainer,
-      style: 'https://tiles.openfreemap.org/styles/liberty',
-      center: [lng, lat],
-      zoom: 16,
-      pitch: 0,
-      bearing: 0
-    });
+	map = new maplibregl.Map({
+		container: mapContainer,
+		style: "https://tiles.openfreemap.org/styles/liberty",
+		center: [lng, lat],
+		zoom: 16,
+		pitch: 0,
+		bearing: 0,
+	});
 
-    map.on('load', () => {
-      isLoading = false;
+	map.on("load", () => {
+		console.log("Map loaded");
+		isLoading = false;
 
-      // Add user location marker
-      userMarker = new maplibregl.Marker({
-        color: '#4facfe',
-        scale: 1.2
-      })
-        .setLngLat([lng, lat])
-        .addTo(map);
+		// Add user location marker
+		userMarker = new maplibregl.Marker({
+			color: "#4facfe",
+			scale: 1.2,
+		})
+			.setLngLat([lng, lat])
+			.addTo(map);
 
-      // Add navigation controls
-      map.addControl(new maplibregl.NavigationControl(), 'top-right');
+		// Add navigation controls
+		map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-      // Add geolocate control
-      const geolocateControl = new maplibregl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
-        trackUserLocation: true,
-        showUserHeading: true
-      });
+		// Add geolocate control
+		const geolocateControl = new maplibregl.GeolocateControl({
+			positionOptions: {
+				enableHighAccuracy: true,
+			},
+			trackUserLocation: true,
+			showUserHeading: true,
+		});
 
-      map.addControl(geolocateControl, 'top-right');
-    });
+		map.addControl(geolocateControl, "top-right");
+	});
 
-    map.on('error', (e) => {
-      console.error('Map error:', e);
-      locationError = 'Failed to load map. Please check your internet connection.';
-      isLoading = false;
-    });
-  };
+	map.on("error", (e) => {
+		console.error("Map error:", e);
+		locationError =
+			"Failed to load map. Please check your internet connection.";
+		isLoading = false;
+	});
+};
 
-  const updateUserPosition = (lat: number, lng: number) => {
-    currentPosition = { lat, lng };
+const updateUserPosition = (lat: number, lng: number) => {
+	currentPosition = { lat, lng };
 
-    if (userMarker && map) {
-      userMarker.setLngLat([lng, lat]);
+	if (userMarker && map) {
+		userMarker.setLngLat([lng, lat]);
 
-      // Smoothly animate to new position
-      map.easeTo({
-        center: [lng, lat],
-        duration: 1000
-      });
-    }
-  };
+		// Smoothly animate to new position
+		map.easeTo({
+			center: [lng, lat],
+			duration: 1000,
+		});
+	}
+};
 
-  const startLocationTracking = () => {
-    if (!navigator.geolocation) {
-      // Use demo location for testing
-      console.log('Geolocation not supported, using demo location');
-      const demoLat = 37.7749; // San Francisco
-      const demoLng = -122.4194;
-      initializeMap(demoLat, demoLng);
-      updateUserPosition(demoLat, demoLng);
-      return;
-    }
+const startLocationTracking = () => {
+	if (!navigator.geolocation) {
+		// Use demo location for testing
+		console.log("Geolocation not supported, using demo location");
+		const demoLat = 37.7749; // San Francisco
+		const demoLng = -122.4194;
+		initializeMap(demoLat, demoLng);
+		updateUserPosition(demoLat, demoLng);
+		return;
+	}
 
-    const options: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    };
+	const options: PositionOptions = {
+		enableHighAccuracy: true,
+		timeout: 10000,
+		maximumAge: 0,
+	};
 
-    // Get initial position
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        initializeMap(latitude, longitude);
-        updateUserPosition(latitude, longitude);
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        // Use demo location when geolocation fails
-        console.log('Using demo location due to geolocation error');
-        const demoLat = 37.7749; // San Francisco
-        const demoLng = -122.4194;
-        initializeMap(demoLat, demoLng);
-        updateUserPosition(demoLat, demoLng);
-      },
-      options
-    );
+	// Get initial position
+	navigator.geolocation.getCurrentPosition(
+		(position) => {
+			const { latitude, longitude } = position.coords;
+			initializeMap(latitude, longitude);
+			updateUserPosition(latitude, longitude);
+		},
+		(error) => {
+			console.error("Geolocation error:", error);
+			// Use demo location when geolocation fails
+			console.log("Using demo location due to geolocation error");
+			const demoLat = 37.7749; // San Francisco
+			const demoLng = -122.4194;
+			initializeMap(demoLat, demoLng);
+			updateUserPosition(demoLat, demoLng);
+		},
+		options,
+	);
 
-    // Watch position for real-time updates (only if geolocation is available)
-    watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        updateUserPosition(latitude, longitude);
-      },
-      (error) => {
-        console.error('Position watch error:', error);
-        // Don't show error for watch position failures, just log them
-      },
-      options
-    );
-  };
+	// Watch position for real-time updates (only if geolocation is available)
+	watchId = navigator.geolocation.watchPosition(
+		(position) => {
+			const { latitude, longitude } = position.coords;
+			updateUserPosition(latitude, longitude);
+		},
+		(error) => {
+			console.error("Position watch error:", error);
+			// Don't show error for watch position failures, just log them
+		},
+		options,
+	);
+};
 
-  const getLocationErrorMessage = (error: GeolocationPositionError): string => {
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-        return "Location access denied. Please enable location permissions to use the map.";
-      case error.POSITION_UNAVAILABLE:
-        return "Location information is unavailable. Please check your device's location settings.";
-      case error.TIMEOUT:
-        return "Location request timed out. Please try again.";
-      default:
-        return "An unknown error occurred while retrieving location.";
-    }
-  };
+const getLocationErrorMessage = (error: GeolocationPositionError): string => {
+	switch (error.code) {
+		case error.PERMISSION_DENIED:
+			return "Location access denied. Please enable location permissions to use the map.";
+		case error.POSITION_UNAVAILABLE:
+			return "Location information is unavailable. Please check your device's location settings.";
+		case error.TIMEOUT:
+			return "Location request timed out. Please try again.";
+		default:
+			return "An unknown error occurred while retrieving location.";
+	}
+};
 
-  const retryLocation = () => {
-    locationError = null;
-    isLoading = true;
-    startLocationTracking();
-  };
+const retryLocation = () => {
+	locationError = null;
+	isLoading = true;
+	startLocationTracking();
+};
 
-  onMount(() => {
-    startLocationTracking();
-  });
+onMount(() => {
+	startLocationTracking();
+});
 
-  onDestroy(() => {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-    }
-    if (map) {
-      map.remove();
-    }
-  });
+onDestroy(() => {
+	if (watchId !== null) {
+		navigator.geolocation.clearWatch(watchId);
+	}
+	if (map) {
+		map.remove();
+	}
+});
 </script>
 
 <div class="map-game">
@@ -198,6 +200,7 @@
 <style>
   .map-game {
     height: 100vh;
+    width: 100vw;
     display: flex;
     flex-direction: column;
     background: #f8fafc;
@@ -380,8 +383,6 @@
       padding: 30px 20px;
       margin: 15px;
     }
-
-
   }
 
   /* Ensure map controls are accessible on mobile */

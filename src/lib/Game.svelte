@@ -1,31 +1,28 @@
 <script lang="ts">
-  import MapGame from './MapGame.svelte'
-  import { push } from 'svelte-spa-router'
-  import { getCurrentGameId } from './utils.ts'
+import { push } from "svelte-spa-router";
+import { getCurrentGameId } from "./utils.ts";
 
-  let { params }: { params: { id: string } } = $props();
+const { params }: { params: { id: string } } = $props();
 
-  const goHome = () => {
-    push('/');
-  };
+const goHome = () => {
+	push("/");
+};
 
-  // Verify that the game ID matches what's stored in localStorage
-  let isValidGame = $state(false);
-  let shouldRedirect = $state(false);
+// Verify that the game ID matches what's stored in localStorage
+let isValidGame = $state(false);
 
-  // Check validation on mount and when params change
-  $effect(() => {
-    const storedGameId = getCurrentGameId();
-    isValidGame = storedGameId === params.id;
-    
-    if (!isValidGame) {
-      shouldRedirect = true;
-      // Small delay to allow the component to render before redirecting
-      setTimeout(() => {
-        goHome();
-      }, 100);
-    }
-  });
+// Check validation on mount and when params change
+$effect(() => {
+	const storedGameId = getCurrentGameId();
+	isValidGame = storedGameId === params.id;
+
+	if (!isValidGame) {
+		// Small delay to allow the component to render before redirecting
+		setTimeout(() => {
+			goHome();
+		}, 100);
+	}
+});
 </script>
 
 {#if isValidGame}

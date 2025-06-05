@@ -1,121 +1,131 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+import { onMount } from "svelte";
 
-  interface LocationData {
-    latitude: number;
-    longitude: number;
-    accuracy: number;
-    timestamp: number;
-  }
+interface LocationData {
+	latitude: number;
+	longitude: number;
+	accuracy: number;
+	timestamp: number;
+}
 
-  interface LocationError {
-    code: number;
-    message: string;
-  }
+interface LocationError {
+	code: number;
+	message: string;
+}
 
-  let location: LocationData | null = $state(null);
-  let error: LocationError | null = $state(null);
-  let loading: boolean = $state(false);
-  let permissionStatus: string = $state('unknown');
+let location: LocationData | null = $state(null);
+let error: LocationError | null = $state(null);
+let loading: boolean = $state(false);
+let permissionStatus: string = $state("unknown");
 
-  const getLocationErrorMessage = (error: GeolocationPositionError): string => {
-    switch (error.code) {
-      case error.PERMISSION_DENIED:
-        return "Location access denied. Please enable location permissions in your browser settings.";
-      case error.POSITION_UNAVAILABLE:
-        return "Location information is unavailable. Please check your device's location settings.";
-      case error.TIMEOUT:
-        return "Location request timed out. Please try again.";
-      default:
-        return "An unknown error occurred while retrieving location.";
-    }
-  };
+const getLocationErrorMessage = (error: GeolocationPositionError): string => {
+	switch (error.code) {
+		case error.PERMISSION_DENIED:
+			return "Location access denied. Please enable location permissions in your browser settings.";
+		case error.POSITION_UNAVAILABLE:
+			return "Location information is unavailable. Please check your device's location settings.";
+		case error.TIMEOUT:
+			return "Location request timed out. Please try again.";
+		default:
+			return "An unknown error occurred while retrieving location.";
+	}
+};
 
-  const getCurrentLocation = (): Promise<LocationData> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject({
-          code: -1,
-          message: "Geolocation is not supported by this browser."
-        });
-        return;
-      }
+const getCurrentLocation = (): Promise<LocationData> => {
+	return new Promise((resolve, reject) => {
+		if (!navigator.geolocation) {
+			reject({
+				code: -1,
+				message: "Geolocation is not supported by this browser.",
+			});
+			return;
+		}
 
-      const options: PositionOptions = {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000 // Cache for 1 minute
-      };
+		const options: PositionOptions = {
+			enableHighAccuracy: true,
+			timeout: 10000,
+			maximumAge: 60000, // Cache for 1 minute
+		};
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const locationData: LocationData = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: position.timestamp
-          };
-          resolve(locationData);
-        },
-        (positionError) => {
-          reject({
-            code: positionError.code,
-            message: getLocationErrorMessage(positionError)
-          });
-        },
-        options
-      );
-    });
-  };
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				const locationData: LocationData = {
+					latitude: position.coords.latitude,
+					longitude: position.coords.longitude,
+					accuracy: position.coords.accuracy,
+					timestamp: position.timestamp,
+				};
+				resolve(locationData);
+			},
+			(positionError) => {
+				reject({
+					code: positionError.code,
+					message: getLocationErrorMessage(positionError),
+				});
+			},
+			options,
+		);
+	});
+};
 
-  const checkPermissionStatus = async () => {
-    if ('permissions' in navigator) {
-      try {
-        const permission = await navigator.permissions.query({ name: 'geolocation' });
-        permissionStatus = permission.state;
-        
-        permission.addEventListener('change', () => {
-          permissionStatus = permission.state;
-          if (permission.state === 'granted' && !location) {
-            requestLocation();
-          }
-        });
-      } catch (err) {
-        console.warn('Permission API not fully supported');
-      }
-    }
-  };
+const checkPermissionStatus = async () => {
+	if ("permissions" in navigator) {
+		try {
+			const permission = await navigator.permissions.query({
+				name: "geolocation",
+			});
+			permissionStatus = permission.state;
 
-  const requestLocation = async () => {
-    loading = true;
-    error = null;
-    
-    try {
-      const locationData = await getCurrentLocation();
-      location = locationData;
-      permissionStatus = 'granted';
-    } catch (err) {
-      error = err as LocationError;
-      if (error.code === 1) { // PERMISSION_DENIED
-        permissionStatus = 'denied';
-      }
-    } finally {
-      loading = false;
-    }
-  };
+			permission.addEventListener("change", () => {
+				permissionStatus = permission.state;
+				if (permission.state === "granted" && !location) {
+					requestLocation();
+				}
+			});
+		} catch (_err) {
+			console.warn("Permission API not fully supported");
+		}
+	}
+};
 
-  const retryLocation = () => {
-    error = null;
-    requestLocation();
-  };
+const requestLocation = async () => {
+	loading = true;
+	error = null;
 
-  onMount(() => {
-    checkPermissionStatus();
-    requestLocation();
-  });
+	try {
+		const locationData = await getCurrentLocation();
+		location = locationData;
+		permissionStatus = "granted";
+	} catch (err) {
+		error = err as LocationError;
+		if (error.code === 1) {
+			// PERMISSION_DENIED
+			permissionStatus = "denied";
+		}
+	} finally {
+		loading = false;
+	}
+};
 
-  // Export reactive values and functions for parent components
-  export { location, error, loading, permissionStatus, requestLocation, retryLocation };
+const retryLocation = () => {
+	error = null;
+	requestLocation();
+};
+
+onMount(() => {
+	checkPermissionStatus();
+	requestLocation();
+});
+
+// Export reactive values and functions for parent components
+export {
+	location,
+	error,
+	loading,
+	permissionStatus,
+	requestLocation,
+	retryLocation,
+};
 </script>
 
 <div class="location-service">

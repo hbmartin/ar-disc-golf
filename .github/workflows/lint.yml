@@ -1,0 +1,21 @@
+name: Run BiomeJS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'node'
+    - name: Install dependencies
+      run: node install
+    - name: Run lint
+      run: npx @biomejs/biome check src
