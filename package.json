@@ -8,7 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-		"lint": "biome ci --diagnostic-level=error"
+		"lint": "biome ci src --diagnostic-level=error"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",

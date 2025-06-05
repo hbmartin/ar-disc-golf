@@ -153,18 +153,24 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 };
 
 const requestOrientationPermission = async () => {
-	if ('DeviceOrientationEvent' in window && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+	if (
+		"DeviceOrientationEvent" in window &&
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		typeof (DeviceOrientationEvent as any).requestPermission === "function"
+	) {
 		try {
-			const permission = await (DeviceOrientationEvent as any).requestPermission();
-			if (permission === 'granted') {
-				window.addEventListener('deviceorientation', handleDeviceOrientation);
+			const permission =
+				await // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				(DeviceOrientationEvent as any).requestPermission();
+			if (permission === "granted") {
+				window.addEventListener("deviceorientation", handleDeviceOrientation);
 			}
 		} catch (error) {
-			console.error('Error requesting device orientation permission:', error);
+			console.error("Error requesting device orientation permission:", error);
 		}
 	} else {
 		// For non-iOS devices, just add the listener
-		window.addEventListener('deviceorientation', handleDeviceOrientation);
+		window.addEventListener("deviceorientation", handleDeviceOrientation);
 	}
 };
 
@@ -180,7 +186,7 @@ onDestroy(() => {
 	if (map) {
 		map.remove();
 	}
-	window.removeEventListener('deviceorientation', handleDeviceOrientation);
+	window.removeEventListener("deviceorientation", handleDeviceOrientation);
 });
 </script>
 
