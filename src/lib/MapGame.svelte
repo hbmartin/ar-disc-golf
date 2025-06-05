@@ -12,6 +12,7 @@ let watchId: number | null = null;
 let currentPosition: { lat: number; lng: number } | null = $state(null);
 let locationError: string | null = $state(null);
 let isLoading = $state(true);
+let isDeviceUpright = $state(false);
 
 const initializeMap = (lat: number, lng: number) => {
 	if (!mapContainer) return;
@@ -143,8 +144,33 @@ const retryLocation = () => {
 	startLocationTracking();
 };
 
+const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
+	// Check if the device is pointing downward (beta > 45 degrees)
+	// Beta represents front-to-back tilt: 90 is pointing straight down, 0 is flat, -90 is pointing up
+	if (event.beta !== null) {
+		isDeviceUpright = event.beta < 45;
+	}
+};
+
+const requestOrientationPermission = async () => {
+	if ('DeviceOrientationEvent' in window && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+		try {
+			const permission = await (DeviceOrientationEvent as any).requestPermission();
+			if (permission === 'granted') {
+				window.addEventListener('deviceorientation', handleDeviceOrientation);
+			}
+		} catch (error) {
+			console.error('Error requesting device orientation permission:', error);
+		}
+	} else {
+		// For non-iOS devices, just add the listener
+		window.addEventListener('deviceorientation', handleDeviceOrientation);
+	}
+};
+
 onMount(() => {
 	startLocationTracking();
+	requestOrientationPermission();
 });
 
 onDestroy(() => {
@@ -154,6 +180,7 @@ onDestroy(() => {
 	if (map) {
 		map.remove();
 	}
+	window.removeEventListener('deviceorientation', handleDeviceOrientation);
 });
 </script>
 
@@ -171,27 +198,37 @@ onDestroy(() => {
   </header>
 
   <div class="map-container">
-    {#if isLoading}
-      <div class="loading-overlay">
-        <div class="spinner"></div>
-        <p>Loading map and getting your location...</p>
-      </div>
-    {/if}
-
-    {#if locationError}
-      <div class="error-overlay">
-        <div class="error-content">
-          <div class="error-icon">⚠️</div>
-          <h3>Location Error</h3>
-          <p>{locationError}</p>
-          <button onclick={retryLocation} class="retry-btn">
-            Try Again
-          </button>
+    {#if isDeviceUpright}
+      <div class="upright-message">
+        <div class="upright-content">
+          <div class="upright-icon">📱</div>
+          <h2>Thanks for holding up your device</h2>
+          <p>Point your device downward to see the map</p>
         </div>
       </div>
-    {/if}
+    {:else}
+      {#if isLoading}
+        <div class="loading-overlay">
+          <div class="spinner"></div>
+          <p>Loading map and getting your location...</p>
+        </div>
+      {/if}
 
-    <div bind:this={mapContainer} class="map"></div>
+      {#if locationError}
+        <div class="error-overlay">
+          <div class="error-content">
+            <div class="error-icon">⚠️</div>
+            <h3>Location Error</h3>
+            <p>{locationError}</p>
+            <button onclick={retryLocation} class="retry-btn">
+              Try Again
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      <div bind:this={mapContainer} class="map"></div>
+    {/if}
   </div>
 
 
@@ -272,7 +309,7 @@ onDestroy(() => {
     height: 100%;
   }
 
-  .loading-overlay, .error-overlay {
+  .loading-overlay, .error-overlay, .upright-message {
     position: absolute;
     top: 0;
     left: 0;
@@ -357,6 +394,35 @@ onDestroy(() => {
     box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
   }
 
+  .upright-content {
+    text-align: center;
+    background: white;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    margin: 20px;
+  }
+
+  .upright-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+  }
+
+  .upright-content h2 {
+    margin: 0 0 15px 0;
+    color: #667eea;
+    font-size: 1.8em;
+    font-weight: 700;
+  }
+
+  .upright-content p {
+    margin: 0;
+    color: #4a5568;
+    font-size: 1.1em;
+    line-height: 1.5;
+  }
+
 
 
   /* Mobile optimizations */
@@ -379,9 +445,17 @@ onDestroy(() => {
       padding: 3px 8px;
     }
 
-    .error-content {
+    .error-content, .upright-content {
       padding: 30px 20px;
       margin: 15px;
+    }
+
+    .upright-content h2 {
+      font-size: 1.5em;
+    }
+
+    .upright-icon {
+      font-size: 48px;
     }
   }
 

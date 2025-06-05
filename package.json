@@ -1,27 +1,28 @@
 {
-  "name": "disc-golf",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "1.9.4",
-    "@sveltejs/vite-plugin-svelte": "^5.0.3",
-    "@tsconfig/svelte": "^5.0.4",
-    "svelte": "^5.28.1",
-    "svelte-check": "^4.1.6",
-    "typescript": "~5.8.3",
-    "vite": "^6.3.5"
-  },
-  "dependencies": {
-    "@ar-js-org/ar.js": "^3.4.7",
-    "aframe": "^1.7.1",
-    "maplibre-gl": "^5.6.0",
-    "svelte-spa-router": "^4.0.1"
-  }
+	"name": "disc-golf",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+		"lint": "biome ci --diagnostic-level=error"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@tsconfig/svelte": "^5.0.4",
+		"svelte": "^5.28.1",
+		"svelte-check": "^4.1.6",
+		"typescript": "~5.8.3",
+		"vite": "^6.3.5"
+	},
+	"dependencies": {
+		"@ar-js-org/ar.js": "^3.4.7",
+		"aframe": "^1.7.1",
+		"maplibre-gl": "^5.6.0",
+		"svelte-spa-router": "^4.0.1"
+	}
 }

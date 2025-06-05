@@ -7,15 +7,16 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 20
-        cache: 'node'
+        cache: npm
+        cache-dependency-path: package-lock.json
     - name: Install dependencies
       run: node install
     - name: Run lint
-      run: npx @biomejs/biome check src
+      run: node run lint
