@@ -1,3 +1,6 @@
+<script context="module">
+import "aframe";
+</script>
 <script lang="ts">
 import maplibregl from "maplibre-gl";
 import { onDestroy, onMount } from "svelte";
@@ -234,11 +237,12 @@ onDestroy(() => {
 		{:else}
 			{#if isDeviceUpright}
 				<div class="upright-message">
-					<div class="upright-content">
-						<div class="upright-icon">📱</div>
-						<h2>Thanks for holding up your device</h2>
-						<p>Point your device downward to see the map</p>
-					</div>
+					<a-scene embedded arjs>
+						<a-marker preset="hiro">
+							<a-box position="0 0.5 0" material="color: yellow;"></a-box>
+						</a-marker>
+						<a-entity camera></a-entity>
+					</a-scene>
 				</div>
 			{/if}
 			{#if locationError}
@@ -347,7 +351,6 @@ onDestroy(() => {
 	right: 0;
 	bottom: 0;
 	background: rgba(255, 255, 255, 0.95);
-	display: flex;
 	align-items: center;
 	justify-content: center;
 	z-index: 1000;
