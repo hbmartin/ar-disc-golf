@@ -57,6 +57,26 @@
 			}
 		},
 		{
+			"include": ["*test*.ts"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedFunctionParameters": "off",
+						"noUnusedVariables": "off"
+					},
+					"performance": {
+						"noDelete": "off"
+					},
+					"style": {
+						"noNonNullAssertion": "off"
+					},
+					"suspicious": {
+						"noExplicitAny": "off"
+					}
+				}
+			}
+		},
+		{
 			"include": ["main.ts"],
 			"linter": {
 				"rules": {

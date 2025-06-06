@@ -1,118 +1,118 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from "vitest";
 
-describe('MapGame DeviceOrientationEvent Logic', () => {
-  let isDeviceUpright = false;
-  
-  // This mimics the handleDeviceOrientation function from MapGame.svelte
-  const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
-    if (event.beta !== null) {
-      isDeviceUpright = event.beta < 45;
-    }
-  };
+describe("MapGame DeviceOrientationEvent Logic", () => {
+	let isDeviceUpright = false;
 
-  beforeEach(() => {
-    isDeviceUpright = false;
-  });
+	// This mimics the handleDeviceOrientation function from MapGame.svelte
+	const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
+		if (event.beta !== null) {
+			isDeviceUpright = event.beta < 45;
+		}
+	};
 
-  it('should set isDeviceUpright to true when beta < 45 (device upright)', () => {
-    const event = new DeviceOrientationEvent('deviceorientation', {
-      beta: 30,
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+	beforeEach(() => {
+		isDeviceUpright = false;
+	});
 
-    handleDeviceOrientation(event);
+	it("should set isDeviceUpright to true when beta < 45 (device upright)", () => {
+		const event = new DeviceOrientationEvent("deviceorientation", {
+			beta: 30,
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-    expect(isDeviceUpright).toBe(true);
-  });
+		handleDeviceOrientation(event);
 
-  it('should set isDeviceUpright to false when beta >= 45 (device pointing down)', () => {
-    const event = new DeviceOrientationEvent('deviceorientation', {
-      beta: 60,
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+		expect(isDeviceUpright).toBe(true);
+	});
 
-    handleDeviceOrientation(event);
+	it("should set isDeviceUpright to false when beta >= 45 (device pointing down)", () => {
+		const event = new DeviceOrientationEvent("deviceorientation", {
+			beta: 60,
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-    expect(isDeviceUpright).toBe(false);
-  });
+		handleDeviceOrientation(event);
 
-  it('should set isDeviceUpright to false when beta equals exactly 45', () => {
-    const event = new DeviceOrientationEvent('deviceorientation', {
-      beta: 45,
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+		expect(isDeviceUpright).toBe(false);
+	});
 
-    handleDeviceOrientation(event);
+	it("should set isDeviceUpright to false when beta equals exactly 45", () => {
+		const event = new DeviceOrientationEvent("deviceorientation", {
+			beta: 45,
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-    expect(isDeviceUpright).toBe(false);
-  });
+		handleDeviceOrientation(event);
 
-  it('should not change isDeviceUpright when beta is null', () => {
-    const initialValue = isDeviceUpright;
-    
-    const event = new DeviceOrientationEvent('deviceorientation', {
-      beta: null,
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+		expect(isDeviceUpright).toBe(false);
+	});
 
-    handleDeviceOrientation(event);
+	it("should not change isDeviceUpright when beta is null", () => {
+		const initialValue = isDeviceUpright;
 
-    expect(isDeviceUpright).toBe(initialValue);
-  });
+		const event = new DeviceOrientationEvent("deviceorientation", {
+			beta: null,
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-  it('should handle extreme beta values correctly', () => {
-    // Test very upright position
-    let event = new DeviceOrientationEvent('deviceorientation', {
-      beta: -30, // Device tilted backwards
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+		handleDeviceOrientation(event);
 
-    handleDeviceOrientation(event);
-    expect(isDeviceUpright).toBe(true);
+		expect(isDeviceUpright).toBe(initialValue);
+	});
 
-    // Test very downward position
-    event = new DeviceOrientationEvent('deviceorientation', {
-      beta: 90, // Device pointing straight down
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+	it("should handle extreme beta values correctly", () => {
+		// Test very upright position
+		let event = new DeviceOrientationEvent("deviceorientation", {
+			beta: -30, // Device tilted backwards
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-    handleDeviceOrientation(event);
-    expect(isDeviceUpright).toBe(false);
-  });
+		handleDeviceOrientation(event);
+		expect(isDeviceUpright).toBe(true);
 
-  it('should handle boundary values correctly', () => {
-    // Test just below threshold
-    let event = new DeviceOrientationEvent('deviceorientation', {
-      beta: 44.9,
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+		// Test very downward position
+		event = new DeviceOrientationEvent("deviceorientation", {
+			beta: 90, // Device pointing straight down
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-    handleDeviceOrientation(event);
-    expect(isDeviceUpright).toBe(true);
+		handleDeviceOrientation(event);
+		expect(isDeviceUpright).toBe(false);
+	});
 
-    // Test just above threshold
-    event = new DeviceOrientationEvent('deviceorientation', {
-      beta: 45.1,
-      alpha: 0,
-      gamma: 0,
-      absolute: false,
-    });
+	it("should handle boundary values correctly", () => {
+		// Test just below threshold
+		let event = new DeviceOrientationEvent("deviceorientation", {
+			beta: 44.9,
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
 
-    handleDeviceOrientation(event);
-    expect(isDeviceUpright).toBe(false);
-  });
+		handleDeviceOrientation(event);
+		expect(isDeviceUpright).toBe(true);
+
+		// Test just above threshold
+		event = new DeviceOrientationEvent("deviceorientation", {
+			beta: 45.1,
+			alpha: 0,
+			gamma: 0,
+			absolute: false,
+		});
+
+		handleDeviceOrientation(event);
+		expect(isDeviceUpright).toBe(false);
+	});
 });
