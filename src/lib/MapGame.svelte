@@ -1,30 +1,30 @@
 <script module>
-import "aframe";
+// import "aframe";
 import "@ar-js-org/ar.js";
 
 // Register A-Frame components before scene initialization
 AFRAME.registerComponent("scene-listener", {
 	init: function () {
 		console.log("Scene listener component initialized");
-		
+
 		this.el.addEventListener("loaded", () => {
 			console.log("A-Frame scene loaded");
 		});
-		
+
 		this.el.addEventListener("arjs-video-loaded", () => {
 			console.log("AR camera loaded successfully");
 			// Update camera loading state
-			const event = new CustomEvent('ar-camera-loaded');
+			const event = new CustomEvent("ar-camera-loaded");
 			window.dispatchEvent(event);
 		});
 
 		this.el.addEventListener("arjs-video-loading-error", (event) => {
 			console.error("AR camera loading error:", event);
 			// Update camera error state
-			const errorEvent = new CustomEvent('ar-camera-error');
+			const errorEvent = new CustomEvent("ar-camera-error");
 			window.dispatchEvent(errorEvent);
 		});
-	}
+	},
 });
 </script>
 
@@ -244,18 +244,18 @@ onMount(() => {
 	) {
 		window.addEventListener("deviceorientation", handleDeviceOrientation);
 	}
-	
+
 	// Add AR event listeners
 	window.addEventListener('ar-camera-loaded', () => {
 		cameraLoading = false;
 		cameraError = false;
 	});
-	
+
 	window.addEventListener('ar-camera-error', () => {
 		cameraLoading = false;
 		cameraError = true;
 	});
-	
+
 	// Disable browser scrolling
 	document.body.style.overflow = "hidden";
 });
