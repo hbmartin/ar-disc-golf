@@ -48,7 +48,6 @@ const initializeMap = (lat: number, lng: number) => {
 				enableHighAccuracy: true,
 			},
 			trackUserLocation: true,
-			showUserHeading: true,
 		});
 
 		map.addControl(geolocateControl, "top-right");
@@ -198,6 +197,8 @@ onMount(() => {
 	) {
 		window.addEventListener("deviceorientation", handleDeviceOrientation);
 	}
+	// Disable browser scrolling
+	document.body.style.overflow = "hidden";
 });
 
 onDestroy(() => {
@@ -208,290 +209,297 @@ onDestroy(() => {
 		map.remove();
 	}
 	window.removeEventListener("deviceorientation", handleDeviceOrientation);
+	// Re-enable browser scrolling
+	document.body.style.overflow = "";
 });
 </script>
 
 <div class="map-game">
-  <header class="map-header">
-    <button class="back-btn" onclick={onBack}>
-      ← Back
-    </button>
-    <h1>🎯 Disc Golf Terrain Map</h1>
-    <div class="status">
-      {#if currentPosition}
-        <span class="location-indicator">📍 Live</span>
-      {/if}
-    </div>
-  </header>
+	<header class="map-header">
+		<button class="back-btn" onclick={onBack}> ← Back </button>
+		<h1>🎯 Disc Golf Terrain Map</h1>
+		<div class="status">
+			{#if currentPosition}
+				<span class="location-indicator">📍 Live</span>
+			{/if}
+		</div>
+	</header>
 
-  <div class="map-container">
-      {#if isLoading}
-        <div class="loading-overlay">
-          <div class="spinner"></div>
-          <p>Loading map and getting your location...</p>
-        </div>
-    {:else}
-      {#if isDeviceUpright}
-        <div class="upright-message">
-            <div class="upright-content">
-            <div class="upright-icon">📱</div>
-            <h2>Thanks for holding up your device</h2>
-            <p>Point your device downward to see the map</p>
-            </div>
-        </div>
-      {/if}
-      {#if locationError}
-        <div class="error-overlay">
-          <div class="error-content">
-            <div class="error-icon">⚠️</div>
-            <h3>Location Error</h3>
-            <p>{locationError}</p>
-            <button onclick={retryLocation} class="retry-btn">
-              Try Again
-            </button>
-          </div>
-        </div>
-      {/if}
-
-      <div bind:this={mapContainer} class="map" onclick={handleMapClick}></div>
-    {/if}
-  </div>
-
-
+	<div class="map-container">
+		{#if isLoading}
+			<div class="loading-overlay">
+				<div class="spinner"></div>
+				<p>Loading map and getting your location...</p>
+			</div>
+		{:else}
+			{#if isDeviceUpright}
+				<div class="upright-message">
+					<div class="upright-content">
+						<div class="upright-icon">📱</div>
+						<h2>Thanks for holding up your device</h2>
+						<p>Point your device downward to see the map</p>
+					</div>
+				</div>
+			{/if}
+			{#if locationError}
+				<div class="error-overlay">
+					<div class="error-content">
+						<div class="error-icon">⚠️</div>
+						<h3>Location Error</h3>
+						<p>{locationError}</p>
+						<button onclick={retryLocation} class="retry-btn">
+							Try Again
+						</button>
+					</div>
+				</div>
+			{/if}
+		{/if}
+		<div bind:this={mapContainer} class="map" onclick={handleMapClick}></div>
+	</div>
 </div>
 
 <style>
-  .map-game {
-    height: 100vh;
-    width: 100vw;
-    display: flex;
-    flex-direction: column;
-    background: #f8fafc;
-  }
+.map-game {
+	height: 100vh;
+	width: 100vw;
+	display: flex;
+	flex-direction: column;
+	background: #f8fafc;
+}
 
-  .map-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 15px 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-  }
+.map-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 15px 20px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: white;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+	z-index: 1000;
+}
 
-  .back-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.9em;
-    font-weight: 600;
-    transition: all 0.3s ease;
-  }
+.back-btn {
+	background: rgba(255, 255, 255, 0.2);
+	border: 2px solid rgba(255, 255, 255, 0.3);
+	color: white;
+	padding: 8px 16px;
+	border-radius: 20px;
+	cursor: pointer;
+	font-size: 0.9em;
+	font-weight: 600;
+	transition: all 0.3s ease;
+}
 
-  .back-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
-    transform: translateY(-1px);
-  }
+.back-btn:hover {
+	background: rgba(255, 255, 255, 0.3);
+	border-color: rgba(255, 255, 255, 0.5);
+	transform: translateY(-1px);
+}
 
-  .map-header h1 {
-    margin: 0;
-    font-size: 1.5em;
-    font-weight: 700;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  }
+.map-header h1 {
+	margin: 0;
+	font-size: 1.5em;
+	font-weight: 700;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
 
-  .status {
-    display: flex;
-    align-items: center;
-  }
+.status {
+	display: flex;
+	align-items: center;
+}
 
-  .location-indicator {
-    background: rgba(76, 175, 80, 0.9);
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.8em;
-    font-weight: 600;
-    animation: pulse 2s infinite;
-  }
+.location-indicator {
+	background: rgba(76, 175, 80, 0.9);
+	padding: 4px 12px;
+	border-radius: 15px;
+	font-size: 0.8em;
+	font-weight: 600;
+	animation: pulse 2s infinite;
+}
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.7;
+	}
+}
 
-  .map-container {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
+.map-container {
+	flex: 1;
+	position: relative;
+	overflow: hidden;
+}
 
-  .map {
-    width: 100%;
-    height: 100%;
-  }
+.map {
+	width: 100%;
+	height: 100%;
+}
 
-  .loading-overlay, .error-overlay, .upright-message {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.95);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
+.loading-overlay,
+.error-overlay,
+.upright-message {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(255, 255, 255, 0.95);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
 
-  .loading-overlay {
-    flex-direction: column;
-    text-align: center;
-  }
+.loading-overlay {
+	flex-direction: column;
+	text-align: center;
+}
 
-  .spinner {
-    width: 50px;
-    height: 50px;
-    border: 4px solid #e2e8f0;
-    border-top: 4px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 20px;
-  }
+.spinner {
+	width: 50px;
+	height: 50px;
+	border: 4px solid #e2e8f0;
+	border-top: 4px solid #667eea;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin-bottom: 20px;
+}
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
 
-  .loading-overlay p {
-    margin: 0;
-    color: #4a5568;
-    font-size: 1.1em;
-    font-weight: 500;
-  }
+.loading-overlay p {
+	margin: 0;
+	color: #4a5568;
+	font-size: 1.1em;
+	font-weight: 500;
+}
 
-  .error-content {
-    text-align: center;
-    background: white;
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
-    margin: 20px;
-  }
+.error-content {
+	text-align: center;
+	background: white;
+	padding: 40px;
+	border-radius: 16px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+	max-width: 400px;
+	margin: 20px;
+}
 
-  .error-icon {
-    font-size: 48px;
-    margin-bottom: 15px;
-  }
+.error-icon {
+	font-size: 48px;
+	margin-bottom: 15px;
+}
 
-  .error-content h3 {
-    margin: 0 0 15px 0;
-    color: #e53e3e;
-    font-size: 1.5em;
-  }
+.error-content h3 {
+	margin: 0 0 15px 0;
+	color: #e53e3e;
+	font-size: 1.5em;
+}
 
-  .error-content p {
-    margin: 0 0 20px 0;
-    color: #4a5568;
-    line-height: 1.5;
-  }
+.error-content p {
+	margin: 0 0 20px 0;
+	color: #4a5568;
+	line-height: 1.5;
+}
 
-  .retry-btn {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    border: none;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-size: 1em;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-  }
+.retry-btn {
+	background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+	border: none;
+	color: white;
+	padding: 12px 24px;
+	border-radius: 25px;
+	cursor: pointer;
+	font-size: 1em;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
 
-  .retry-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
-  }
+.retry-btn:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
 
-  .upright-content {
-    text-align: center;
-    background: white;
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    max-width: 400px;
-    margin: 20px;
-  }
+.upright-content {
+	text-align: center;
+	background: white;
+	padding: 40px;
+	border-radius: 16px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+	max-width: 400px;
+	margin: 20px;
+}
 
-  .upright-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-  }
+.upright-icon {
+	font-size: 64px;
+	margin-bottom: 20px;
+}
 
-  .upright-content h2 {
-    margin: 0 0 15px 0;
-    color: #667eea;
-    font-size: 1.8em;
-    font-weight: 700;
-  }
+.upright-content h2 {
+	margin: 0 0 15px 0;
+	color: #667eea;
+	font-size: 1.8em;
+	font-weight: 700;
+}
 
-  .upright-content p {
-    margin: 0;
-    color: #4a5568;
-    font-size: 1.1em;
-    line-height: 1.5;
-  }
+.upright-content p {
+	margin: 0;
+	color: #4a5568;
+	font-size: 1.1em;
+	line-height: 1.5;
+}
 
+/* Mobile optimizations */
+@media (max-width: 768px) {
+	.map-header {
+		padding: 12px 15px;
+	}
 
+	.map-header h1 {
+		font-size: 1.2em;
+	}
 
-  /* Mobile optimizations */
-  @media (max-width: 768px) {
-    .map-header {
-      padding: 12px 15px;
-    }
+	.back-btn {
+		padding: 6px 12px;
+		font-size: 0.8em;
+	}
 
-    .map-header h1 {
-      font-size: 1.2em;
-    }
+	.location-indicator {
+		font-size: 0.7em;
+		padding: 3px 8px;
+	}
 
-    .back-btn {
-      padding: 6px 12px;
-      font-size: 0.8em;
-    }
+	.error-content,
+	.upright-content {
+		padding: 30px 20px;
+		margin: 15px;
+	}
 
-    .location-indicator {
-      font-size: 0.7em;
-      padding: 3px 8px;
-    }
+	.upright-content h2 {
+		font-size: 1.5em;
+	}
 
-    .error-content, .upright-content {
-      padding: 30px 20px;
-      margin: 15px;
-    }
+	.upright-icon {
+		font-size: 48px;
+	}
+}
 
-    .upright-content h2 {
-      font-size: 1.5em;
-    }
+/* Ensure map controls are accessible on mobile */
+:global(.maplibregl-ctrl-group) {
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+}
 
-    .upright-icon {
-      font-size: 48px;
-    }
-  }
-
-  /* Ensure map controls are accessible on mobile */
-  :global(.maplibregl-ctrl-group) {
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
-  }
-
-  :global(.maplibregl-ctrl-group button) {
-    min-width: 44px !important;
-    min-height: 44px !important;
-  }
+:global(.maplibregl-ctrl-group button) {
+	min-width: 44px !important;
+	min-height: 44px !important;
+}
 </style>

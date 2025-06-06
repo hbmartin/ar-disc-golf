@@ -48,7 +48,8 @@
 				"rules": {
 					"style": {
 						"useConst": "off",
-						"useImportType": "off"
+						"useImportType": "off",
+						"useFilenamingConvention": "off"
 					},
 					"correctness": {
 						"noUnusedImports": "off",
