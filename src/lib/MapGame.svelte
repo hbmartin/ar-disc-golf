@@ -22,6 +22,57 @@ AFRAME.registerComponent("scene-listener", {
 		});
 	},
 });
+
+AFRAME.registerComponent("curved-arrow", {
+	schema: {
+		color: { type: "color", default: "#FF0000" },
+		radius: { type: "number", default: 1 },
+		tube: { type: "number", default: 0.02 },
+		radialSegments: { type: "int", default: 8 },
+		tubularSegments: { type: "int", default: 64 },
+		arc: { type: "number", default: Math.PI },
+	},
+	init: function () {
+		const data = this.data;
+		const curve = new THREE.QuadraticBezierCurve3(
+			new THREE.Vector3(0, 0, 0),
+			new THREE.Vector3(0, data.radius, -data.radius),
+			new THREE.Vector3(data.radius, 0, -2 * data.radius),
+		);
+
+		const geometry = new THREE.TubeGeometry(
+			curve,
+			data.tubularSegments,
+			data.tube,
+			data.radialSegments,
+			false,
+		);
+
+		const material = new THREE.MeshStandardMaterial({ color: data.color });
+		const mesh = new THREE.Mesh(geometry, material);
+
+		this.el.setObject3D("mesh", mesh);
+
+		const arrowHeadGeometry = new THREE.ConeGeometry(0.05, 0.2, 8);
+		const arrowHeadMaterial = new THREE.MeshStandardMaterial({
+			color: data.color,
+		});
+		const arrowHead = new THREE.Mesh(arrowHeadGeometry, arrowHeadMaterial);
+
+		// Position the arrowhead at the end of the curve
+		const endPoint = curve.getPoint(1);
+		arrowHead.position.copy(endPoint);
+
+		// Align the arrowhead with the direction of the curve
+		const tangent = curve.getTangent(1).normalize();
+		arrowHead.quaternion.setFromUnitVectors(
+			new THREE.Vector3(0, 1, 0),
+			tangent,
+		);
+
+		this.el.setObject3D("arrowhead", arrowHead);
+	},
+});
 </script>
 
 <script lang="ts">
@@ -181,12 +232,15 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 		const wasUpright = isDeviceUpright;
 		isDeviceUpright = event.beta > 45;
 
+
 		if (isDeviceUpright) {
 			mapContainer.style.display = "none";
 			arScene.style.display = "block";
+			document.getElementById('arjs-video').style.display = 'block';
 		} else {
 			mapContainer.style.display = "block";
 			arScene.style.display = "none";
+			document.getElementById('arjs-video').style.display = 'none';
 		}
 
 		// Reset camera states when switching to AR view
@@ -320,36 +374,8 @@ onDestroy(() => {
 				loading-screen="enabled: false"
 				scene-listener
 			>
-	  <a-cylinder
-    position="0 0 -3"
-    radius="0.02"
-    height="1"
-    color="#FF0000"
-    rotation="0 0 0">
-  </a-cylinder>
+  <a-entity curved-arrow position="0 0 -3"></a-entity>
 
-  <!-- Arrow Head -->
-  <a-cone
-    position="0 0.5 -3"
-    radius-bottom="0.05"
-    radius-top="0"
-    height="0.2"
-    color="#FF0000"
-    rotation="0 0 0">
-  </a-cone>
-				<a-marker preset="hiro">
-					<a-box
-						position="0 0.5 0"
-						material="color: yellow;"
-						animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
-					></a-box>
-					<a-text
-						position="0 1 0"
-						align="center"
-						value="Disc Golf Target!"
-						color="#4facfe"
-					></a-text>
-				</a-marker>
 				<a-entity camera="active: true; fov: 80"></a-entity>
 			</a-scene>
 		</div>
