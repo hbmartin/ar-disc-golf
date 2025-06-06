@@ -232,6 +232,7 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 		const wasUpright = isDeviceUpright;
 		isDeviceUpright = event.beta > 45;
 
+		console.log('Device orientation changed:', event.beta);
 
 		if (isDeviceUpright) {
 			mapContainer.style.display = "none";
