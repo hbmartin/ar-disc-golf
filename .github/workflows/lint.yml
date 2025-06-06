@@ -1,4 +1,4 @@
-name: Run BiomeJS
+name: Run svelte-check and biome
 
 on:
   push:
