@@ -1,4 +1,4 @@
-<script context="module">
+<script module>
 import "aframe";
 </script>
 
@@ -6,10 +6,12 @@ import "aframe";
 import maplibregl from "maplibre-gl";
 import { onDestroy, onMount } from "svelte";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Entity, AScene } from "aframe";
 
 const { onBack, gameId }: { onBack: () => void; gameId: string } = $props();
 
 let mapContainer: HTMLDivElement;
+let arScene: AScene;
 let map: maplibregl.Map;
 let userMarker: maplibregl.Marker | null = null;
 let watchId: number | null = null;
@@ -20,6 +22,22 @@ let isDeviceUpright = $state(false);
 let orientationPermissionRequested = $state(false);
 let cameraLoading = $state(true);
 let cameraError = $state(false);
+
+AFRAME.registerComponent("scene-listener", {
+	init: function () {
+		this.el.addEventListener("loaded", function () {
+			console.log("Scene loaded from component!");
+		});
+		this.el.addEventListener("arjs-video-loaded", function () {
+			console.log("AR camera loaded successfully");
+		});
+
+		// Handle AR initialization errors
+		this.el.addEventListener("arjs-video-loading-error", function (event) {
+			console.error("AR camera loading error:", event);
+		});
+	},
+});
 
 const initializeMap = (lat: number, lng: number) => {
 	if (!mapContainer) return;
@@ -251,62 +269,56 @@ onDestroy(() => {
 				<p>Loading map and getting your location...</p>
 			</div>
 		{/if}
-			<!-- {#if isDeviceUpright} -->
-				<div class="camera-view">
-					{#if cameraLoading}
-						<div class="camera-loading">
-							<div class="spinner"></div>
-							<p>Starting camera...</p>
-						</div>
-					{/if}
-					{#if cameraError}
-						<div class="camera-error">
-							<div class="error-icon">📷</div>
-							<p>Camera access denied or unavailable</p>
-						</div>
-					{/if}
-					<a-scene
-						embedded
-						arjs
-						vr-mode-ui="enabled: false"
-						onloadeddata={() => {
-							cameraLoading = false;
-						}}
-						onerror={(e) => {
-							cameraError = true;
-							cameraLoading = false;
-							console.error(e);
-						}}
-					>
-						<a-marker preset="hiro">
-							<a-box
-								position="0 0.5 0"
-								material="color: yellow;"
-								animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
-							></a-box>
-							<a-text
-								position="0 1 0"
-								align="center"
-								value="Disc Golf Target!"
-								color="#4facfe"
-							></a-text>
-						</a-marker>
-						<a-entity camera="active: true; fov: 80"></a-entity>
-					</a-scene>
-				</div>
-			<!-- {/if} -->
-			{#if locationError}
-				<div class="error-overlay">
-					<div class="error-content">
-						<div class="error-icon">⚠️</div>
-						<h3>Location Error</h3>
-						<p>{locationError}</p>
-						<button onclick={retryLocation} class="retry-btn">
-							Try Again
-						</button>
-					</div>
+		<!-- {#if isDeviceUpright} -->
+		<div class="camera-view">
+			{#if cameraLoading && !cameraError}
+				<div class="camera-loading">
+					<div class="spinner"></div>
+					<p>Starting camera...</p>
 				</div>
 			{/if}
+			{#if cameraError}
+				<div class="camera-error">
+					<div class="error-icon">📷</div>
+					<p>Camera access denied or unavailable</p>
+				</div>
+			{/if}
+			<a-scene
+				bind:this={arScene}
+				vr-mode-ui="enabled: false"
+				arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+				renderer="logarithmicDepthBuffer: true;"
+				embedded
+				loading-screen="enabled: false"
+				scene-listener
+			>
+				<a-marker preset="hiro">
+					<a-box
+						position="0 0.5 0"
+						material="color: yellow;"
+						animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
+					></a-box>
+					<a-text
+						position="0 1 0"
+						align="center"
+						value="Disc Golf Target!"
+						color="#4facfe"
+					></a-text>
+				</a-marker>
+				<a-entity camera="active: true; fov: 80"></a-entity>
+			</a-scene>
+		</div>
+		<!-- {/if} -->
+		{#if locationError}
+			<div class="error-overlay">
+				<div class="error-content">
+					<div class="error-icon">⚠️</div>
+					<h3>Location Error</h3>
+					<p>{locationError}</p>
+					<button onclick={retryLocation} class="retry-btn"> Try Again </button>
+				</div>
+			</div>
+		{/if}
 		<div bind:this={mapContainer} class="map" onclick={handleMapClick}></div>
 	</div>
 </div>
