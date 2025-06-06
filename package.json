@@ -8,16 +8,22 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-		"lint": "svelte-check && biome ci src --diagnostic-level=error"
+		"lint": "svelte-check && biome ci src --diagnostic-level=error",
+		"test": "vitest --watch=false"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@testing-library/svelte": "^5.2.8",
+		"@testing-library/user-event": "^14.6.1",
 		"@tsconfig/svelte": "^5.0.4",
+		"happy-dom": "^17.6.3",
+		"jsdom": "^26.1.0",
 		"svelte": "^5.28.1",
 		"svelte-check": "^4.2.1",
 		"typescript": "~5.8.3",
-		"vite": "^6.3.5"
+		"vite": "^6.3.5",
+		"vitest": "^3.2.2"
 	},
 	"dependencies": {
 		"@ar-js-org/ar.js": "^3.4.7",
