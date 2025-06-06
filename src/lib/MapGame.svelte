@@ -232,7 +232,7 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 		const wasUpright = isDeviceUpright;
 		isDeviceUpright = event.beta > 45;
 
-		console.log('Device orientation changed:', event.beta);
+		console.log('Device orientation changed:', isDeviceUpright);
 
 		if (isDeviceUpright) {
 			mapContainer.style.display = "none";
@@ -259,6 +259,7 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 };
 
 const requestOrientationPermission = async () => {
+  console.log("requestOrientationPermission")
 	if (
 		"DeviceOrientationEvent" in window &&
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -374,6 +375,7 @@ onDestroy(() => {
 				embedded
 				loading-screen="enabled: false"
 				scene-listener
+				onclick={handleMapClick}
 			>
   <a-entity curved-arrow position="0 0 -3"></a-entity>
 
