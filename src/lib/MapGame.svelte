@@ -1,17 +1,42 @@
 <script module>
 import "aframe";
+import "@ar-js-org/ar.js";
+
+// Register A-Frame components before scene initialization
+AFRAME.registerComponent("scene-listener", {
+	init: function () {
+		console.log("Scene listener component initialized");
+		
+		this.el.addEventListener("loaded", () => {
+			console.log("A-Frame scene loaded");
+		});
+		
+		this.el.addEventListener("arjs-video-loaded", () => {
+			console.log("AR camera loaded successfully");
+			// Update camera loading state
+			const event = new CustomEvent('ar-camera-loaded');
+			window.dispatchEvent(event);
+		});
+
+		this.el.addEventListener("arjs-video-loading-error", (event) => {
+			console.error("AR camera loading error:", event);
+			// Update camera error state
+			const errorEvent = new CustomEvent('ar-camera-error');
+			window.dispatchEvent(errorEvent);
+		});
+	}
+});
 </script>
 
 <script lang="ts">
 import maplibregl from "maplibre-gl";
 import { onDestroy, onMount } from "svelte";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Entity, AScene } from "aframe";
 
 const { onBack, gameId }: { onBack: () => void; gameId: string } = $props();
 
 let mapContainer: HTMLDivElement;
-let arScene: AScene;
+let arScene: HTMLElement;
 let map: maplibregl.Map;
 let userMarker: maplibregl.Marker | null = null;
 let watchId: number | null = null;
@@ -23,21 +48,6 @@ let orientationPermissionRequested = $state(false);
 let cameraLoading = $state(true);
 let cameraError = $state(false);
 
-AFRAME.registerComponent("scene-listener", {
-	init: function () {
-		this.el.addEventListener("loaded", function () {
-			console.log("Scene loaded from component!");
-		});
-		this.el.addEventListener("arjs-video-loaded", function () {
-			console.log("AR camera loaded successfully");
-		});
-
-		// Handle AR initialization errors
-		this.el.addEventListener("arjs-video-loading-error", function (event) {
-			console.error("AR camera loading error:", event);
-		});
-	},
-});
 
 const initializeMap = (lat: number, lng: number) => {
 	if (!mapContainer) return;
@@ -234,6 +244,18 @@ onMount(() => {
 	) {
 		window.addEventListener("deviceorientation", handleDeviceOrientation);
 	}
+	
+	// Add AR event listeners
+	window.addEventListener('ar-camera-loaded', () => {
+		cameraLoading = false;
+		cameraError = false;
+	});
+	
+	window.addEventListener('ar-camera-error', () => {
+		cameraLoading = false;
+		cameraError = true;
+	});
+	
 	// Disable browser scrolling
 	document.body.style.overflow = "hidden";
 });
@@ -246,6 +268,8 @@ onDestroy(() => {
 		map.remove();
 	}
 	window.removeEventListener("deviceorientation", handleDeviceOrientation);
+	window.removeEventListener('ar-camera-loaded', () => {});
+	window.removeEventListener('ar-camera-error', () => {});
 	// Re-enable browser scrolling
 	document.body.style.overflow = "";
 });
