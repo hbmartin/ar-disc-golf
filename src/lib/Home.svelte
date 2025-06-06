@@ -1,6 +1,6 @@
 <script lang="ts">
 import { push } from "svelte-spa-router";
-import type LocationService from "./LocationService.svelte";
+import LocationService from "./LocationService.svelte";
 import { generateGameId, saveGameId } from "./utils.ts";
 
 let locationServiceRef: LocationService;

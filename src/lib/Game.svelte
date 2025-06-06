@@ -1,7 +1,7 @@
 <script lang="ts">
 import { push } from "svelte-spa-router";
-import { getCurrentGameId } from "./utils.ts";
 import MapGame from "./MapGame.svelte";
+import { getCurrentGameId } from "./utils.ts";
 
 const { params }: { params: { id: string } } = $props();
 

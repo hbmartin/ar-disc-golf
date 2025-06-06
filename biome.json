@@ -49,6 +49,9 @@
 					"style": {
 						"useConst": "off",
 						"useImportType": "off"
+					},
+					"correctness": {
+						"noUnusedImports": "off"
 					}
 				}
 			}
@@ -61,8 +64,7 @@
 						"noNonNullAssertion": "off"
 					},
 					"correctness": {
-						"noUnusedVariables": "off",
-						"noUnusedImports": "off"
+						"noUnusedVariables": "off"
 					}
 				}
 			}
