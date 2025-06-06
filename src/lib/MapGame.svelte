@@ -8,17 +8,13 @@ AFRAME.registerComponent("scene-listener", {
 		console.log("Scene listener component initialized");
 
 		this.el.addEventListener("loaded", () => {
-			console.log("A-Frame scene loaded");
-		});
-
-		this.el.addEventListener("arjs-video-loaded", () => {
 			console.log("AR camera loaded successfully");
 			// Update camera loading state
 			const event = new CustomEvent("ar-camera-loaded");
 			window.dispatchEvent(event);
 		});
 
-		this.el.addEventListener("arjs-video-loading-error", (event) => {
+		this.el.addEventListener("error", (event) => {
 			console.error("AR camera loading error:", event);
 			// Update camera error state
 			const errorEvent = new CustomEvent("ar-camera-error");
@@ -185,6 +181,14 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 		const wasUpright = isDeviceUpright;
 		isDeviceUpright = event.beta > 45;
 
+		if (isDeviceUpright) {
+			mapContainer.style.display = "none";
+			arScene.style.display = "block";
+		} else {
+			mapContainer.style.display = "block";
+			arScene.style.display = "none";
+		}
+
 		// Reset camera states when switching to AR view
 		if (!wasUpright && isDeviceUpright) {
 			cameraLoading = true;
@@ -316,6 +320,23 @@ onDestroy(() => {
 				loading-screen="enabled: false"
 				scene-listener
 			>
+	  <a-cylinder
+    position="0 0 -3"
+    radius="0.02"
+    height="1"
+    color="#FF0000"
+    rotation="0 0 0">
+  </a-cylinder>
+
+  <!-- Arrow Head -->
+  <a-cone
+    position="0 0.5 -3"
+    radius-bottom="0.05"
+    radius-top="0"
+    height="0.2"
+    color="#FF0000"
+    rotation="0 0 0">
+  </a-cone>
 				<a-marker preset="hiro">
 					<a-box
 						position="0 0.5 0"
@@ -353,7 +374,7 @@ onDestroy(() => {
 	width: 100vw;
 	display: flex;
 	flex-direction: column;
-	background: #f8fafc;
+	background: transparent;
 }
 
 .map-header {
@@ -365,6 +386,11 @@ onDestroy(() => {
 	color: white;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 	z-index: 1000;
+}
+:global {
+#arjs-video {
+    z-index: 999 !important;
+}
 }
 
 .back-btn {
