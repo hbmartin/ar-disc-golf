@@ -1,6 +1,7 @@
 <script context="module">
 import "aframe";
 </script>
+
 <script lang="ts">
 import maplibregl from "maplibre-gl";
 import { onDestroy, onMount } from "svelte";
@@ -17,6 +18,8 @@ let locationError: string | null = $state(null);
 let isLoading = $state(true);
 let isDeviceUpright = $state(false);
 let orientationPermissionRequested = $state(false);
+let cameraLoading = $state(true);
+let cameraError = $state(false);
 
 const initializeMap = (lat: number, lng: number) => {
 	if (!mapContainer) return;
@@ -236,12 +239,40 @@ onDestroy(() => {
 			</div>
 		{:else}
 			{#if isDeviceUpright}
-				<div class="upright-message">
-					<a-scene embedded arjs>
+				<div class="camera-view">
+					{#if cameraLoading}
+						<div class="camera-loading">
+							<div class="spinner"></div>
+							<p>Starting camera...</p>
+						</div>
+					{/if}
+					{#if cameraError}
+						<div class="camera-error">
+							<div class="error-icon">📷</div>
+							<p>Camera access denied or unavailable</p>
+						</div>
+					{/if}
+					<a-scene
+						embedded
+						arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+						vr-mode-ui="enabled: false"
+						renderer="logarithmicDepthBuffer: true;"
+						background="transparent"
+					>
 						<a-marker preset="hiro">
-							<a-box position="0 0.5 0" material="color: yellow;"></a-box>
+							<a-box
+								position="0 0.5 0"
+								material="color: yellow;"
+								animation="property: rotation; to: 0 360 0; loop: true; dur: 2000"
+							></a-box>
+							<a-text
+								position="0 1 0"
+								align="center"
+								value="Disc Golf Target!"
+								color="#4facfe"
+							></a-text>
 						</a-marker>
-						<a-entity camera></a-entity>
+						<a-entity camera="active: true; fov: 80"></a-entity>
 					</a-scene>
 				</div>
 			{/if}
@@ -344,7 +375,7 @@ onDestroy(() => {
 
 .loading-overlay,
 .error-overlay,
-.upright-message {
+.camera-view {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -354,6 +385,30 @@ onDestroy(() => {
 	align-items: center;
 	justify-content: center;
 	z-index: 1000;
+}
+
+.camera-view {
+	background: transparent;
+}
+
+.camera-loading,
+.camera-error {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background: rgba(0, 0, 0, 0.8);
+	color: white;
+	padding: 20px;
+	border-radius: 12px;
+	text-align: center;
+	z-index: 2000;
+}
+
+.camera-loading p,
+.camera-error p {
+	margin: 10px 0 0 0;
+	font-size: 0.9em;
 }
 
 .loading-overlay {
