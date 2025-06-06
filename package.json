@@ -8,7 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-		"lint": "svelte-check && biome ci src --diagnostic-level=error",
+		"lint": "biome ci src --diagnostic-level=error && prettier -c src",
 		"test": "vitest --watch=false"
 	},
 	"devDependencies": {
@@ -19,6 +19,8 @@
 		"@tsconfig/svelte": "^5.0.4",
 		"happy-dom": "^17.6.3",
 		"jsdom": "^26.1.0",
+		"prettier": "^3.5.3",
+		"prettier-plugin-svelte": "^3.4.0",
 		"svelte": "^5.28.1",
 		"svelte-check": "^4.2.1",
 		"typescript": "~5.8.3",

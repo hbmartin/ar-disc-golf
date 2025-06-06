@@ -149,7 +149,7 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 	// Check if the device is pointing downward (beta > 45 degrees)
 	// Beta represents front-to-back tilt: 90 is pointing straight down, 0 is flat, -90 is pointing up
 	if (event.beta !== null) {
-		isDeviceUpright = event.beta < 45;
+		isDeviceUpright = event.beta > 45;
 	}
 };
 
@@ -225,22 +225,21 @@ onDestroy(() => {
   </header>
 
   <div class="map-container">
-    {#if isDeviceUpright}
-      <div class="upright-message">
-        <div class="upright-content">
-          <div class="upright-icon">📱</div>
-          <h2>Thanks for holding up your device</h2>
-          <p>Point your device downward to see the map</p>
-        </div>
-      </div>
-    {:else}
       {#if isLoading}
         <div class="loading-overlay">
           <div class="spinner"></div>
           <p>Loading map and getting your location...</p>
         </div>
+    {:else}
+      {#if isDeviceUpright}
+        <div class="upright-message">
+            <div class="upright-content">
+            <div class="upright-icon">📱</div>
+            <h2>Thanks for holding up your device</h2>
+            <p>Point your device downward to see the map</p>
+            </div>
+        </div>
       {/if}
-
       {#if locationError}
         <div class="error-overlay">
           <div class="error-content">
