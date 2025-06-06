@@ -1,4 +1,5 @@
 <script lang="ts">
+import Router from "svelte-spa-router";
 import Game from "./lib/Game.svelte";
 import Home from "./lib/Home.svelte";
 
@@ -9,5 +10,3 @@ const routes = {
 </script>
 
 <Router {routes} />
-
-
