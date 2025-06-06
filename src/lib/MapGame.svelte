@@ -154,7 +154,20 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 	// Check if the device is pointing downward (beta > 45 degrees)
 	// Beta represents front-to-back tilt: 90 is pointing straight down, 0 is flat, -90 is pointing up
 	if (event.beta !== null) {
+		const wasUpright = isDeviceUpright;
 		isDeviceUpright = event.beta > 45;
+
+		// Reset camera states when switching to AR view
+		if (!wasUpright && isDeviceUpright) {
+			cameraLoading = true;
+			cameraError = false;
+			// Set timeout to handle cases where camera events don't fire
+			setTimeout(() => {
+				if (cameraLoading) {
+					cameraLoading = false;
+				}
+			}, 3000);
+		}
 	}
 };
 
@@ -237,8 +250,8 @@ onDestroy(() => {
 				<div class="spinner"></div>
 				<p>Loading map and getting your location...</p>
 			</div>
-		{:else}
-			{#if isDeviceUpright}
+		{/if}
+			<!-- {#if isDeviceUpright} -->
 				<div class="camera-view">
 					{#if cameraLoading}
 						<div class="camera-loading">
@@ -281,7 +294,7 @@ onDestroy(() => {
 						<a-entity camera="active: true; fov: 80"></a-entity>
 					</a-scene>
 				</div>
-			{/if}
+			<!-- {/if} -->
 			{#if locationError}
 				<div class="error-overlay">
 					<div class="error-content">
@@ -294,7 +307,6 @@ onDestroy(() => {
 					</div>
 				</div>
 			{/if}
-		{/if}
 		<div bind:this={mapContainer} class="map" onclick={handleMapClick}></div>
 	</div>
 </div>
@@ -379,8 +391,6 @@ onDestroy(() => {
 	height: 100%;
 }
 
-.loading-overlay,
-.error-overlay,
 .camera-view {
 	position: absolute;
 	top: 0;
@@ -397,6 +407,8 @@ onDestroy(() => {
 	background: transparent;
 }
 
+.loading-overlay,
+.error-overlay,
 .camera-loading,
 .camera-error {
 	position: absolute;
