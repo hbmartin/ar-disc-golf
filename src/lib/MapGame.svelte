@@ -13,6 +13,7 @@ let currentPosition: { lat: number; lng: number } | null = $state(null);
 let locationError: string | null = $state(null);
 let isLoading = $state(true);
 let isDeviceUpright = $state(false);
+let orientationPermissionRequested = $state(false);
 
 const initializeMap = (lat: number, lng: number) => {
 	if (!mapContainer) return;
@@ -174,9 +175,29 @@ const requestOrientationPermission = async () => {
 	}
 };
 
+const handleMapClick = () => {
+	// Request orientation permission on first user interaction (iOS only)
+	if (
+		!orientationPermissionRequested &&
+		"DeviceOrientationEvent" in window &&
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		typeof (DeviceOrientationEvent as any).requestPermission === "function"
+	) {
+		orientationPermissionRequested = true;
+		requestOrientationPermission();
+	}
+};
+
 onMount(() => {
 	startLocationTracking();
-	requestOrientationPermission();
+	// For non-iOS devices, add orientation listener immediately
+	if (
+		"DeviceOrientationEvent" in window &&
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		typeof (DeviceOrientationEvent as any).requestPermission !== "function"
+	) {
+		window.addEventListener("deviceorientation", handleDeviceOrientation);
+	}
 });
 
 onDestroy(() => {
@@ -233,7 +254,7 @@ onDestroy(() => {
         </div>
       {/if}
 
-      <div bind:this={mapContainer} class="map"></div>
+      <div bind:this={mapContainer} class="map" onclick={handleMapClick}></div>
     {/if}
   </div>
 
