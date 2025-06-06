@@ -254,10 +254,16 @@ onDestroy(() => {
 					{/if}
 					<a-scene
 						embedded
-						arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+						arjs
 						vr-mode-ui="enabled: false"
-						renderer="logarithmicDepthBuffer: true;"
-						background="transparent"
+						onloadeddata={() => {
+							cameraLoading = false;
+						}}
+						onerror={(e) => {
+							cameraError = true;
+							cameraLoading = false;
+							console.error(e);
+						}}
 					>
 						<a-marker preset="hiro">
 							<a-box
