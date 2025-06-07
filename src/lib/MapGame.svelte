@@ -337,7 +337,13 @@ onDestroy(() => {
 <div class="map-game">
 	<header class="map-header">
 		<button class="back-btn" onclick={onBack}> ← Back </button>
-		<h1>🎯 Disc Golf Terrain Map</h1>
+		<h1>
+			{#if orientationPermissionRequested || typeof DeviceOrientationEvent?.requestPermission !== "function"}
+				{isDeviceUpright ? "📱 AR View Active" : "🗺️ Map View Active"}
+			{:else}
+				🎯 Tap map for orientation access
+			{/if}
+		</h1>
 		<div class="status">
 			{#if currentPosition}
 				<span class="location-indicator">📍 Live</span>
