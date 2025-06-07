@@ -5,7 +5,33 @@ import { generateGameId, saveGameId } from "./utils.ts";
 
 let locationServiceRef: LocationService;
 
-const startGame = () => {
+const requestOrientationPermission = async () => {
+	console.log("requestOrientationPermission");
+	if (
+		"DeviceOrientationEvent" in window &&
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		typeof (DeviceOrientationEvent as any).requestPermission === "function"
+	) {
+		console.log("requestOrientationPermission on Safari");
+		try {
+			const permission =
+				await // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+				(DeviceOrientationEvent as any).requestPermission();
+			if (permission === "granted") {
+				console.log("Device orientation permission granted");
+			} else {
+				console.log("Device orientation permission denied");
+			}
+		} catch (error) {
+			console.error("Error requesting device orientation permission:", error);
+		}
+	} else {
+		console.log("Device orientation permission not required on this device");
+	}
+};
+
+const startGame = async () => {
+	await requestOrientationPermission();
 	const gameId = generateGameId();
 	saveGameId(gameId);
 	push(`/game/${gameId}`);
