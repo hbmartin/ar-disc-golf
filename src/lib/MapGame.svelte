@@ -95,7 +95,6 @@ let orientationPermissionRequested = $state(false);
 let cameraLoading = $state(true);
 let cameraError = $state(false);
 
-
 const initializeMap = (lat: number, lng: number) => {
 	if (!mapContainer) return;
 
@@ -232,16 +231,14 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 		const wasUpright = isDeviceUpright;
 		isDeviceUpright = event.beta > 45;
 
-		console.log('Device orientation changed:', isDeviceUpright);
-
 		if (isDeviceUpright) {
 			mapContainer.style.display = "none";
 			arScene.style.display = "block";
-			document.getElementById('arjs-video').style.display = 'block';
+			document.getElementById("arjs-video").style.display = "block";
 		} else {
 			mapContainer.style.display = "block";
 			arScene.style.display = "none";
-			document.getElementById('arjs-video').style.display = 'none';
+			document.getElementById("arjs-video").style.display = "none";
 		}
 
 		// Reset camera states when switching to AR view
@@ -259,7 +256,7 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 };
 
 const requestOrientationPermission = async () => {
-  console.log("requestOrientationPermission")
+	console.log("requestOrientationPermission");
 	if (
 		"DeviceOrientationEvent" in window &&
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -306,12 +303,12 @@ onMount(() => {
 	}
 
 	// Add AR event listeners
-	window.addEventListener('ar-camera-loaded', () => {
+	window.addEventListener("ar-camera-loaded", () => {
 		cameraLoading = false;
 		cameraError = false;
 	});
 
-	window.addEventListener('ar-camera-error', () => {
+	window.addEventListener("ar-camera-error", () => {
 		cameraLoading = false;
 		cameraError = true;
 	});
@@ -328,8 +325,8 @@ onDestroy(() => {
 		map.remove();
 	}
 	window.removeEventListener("deviceorientation", handleDeviceOrientation);
-	window.removeEventListener('ar-camera-loaded', () => {});
-	window.removeEventListener('ar-camera-error', () => {});
+	window.removeEventListener("ar-camera-loaded", () => {});
+	window.removeEventListener("ar-camera-error", () => {});
 	// Re-enable browser scrolling
 	document.body.style.overflow = "";
 });
@@ -370,14 +367,14 @@ onDestroy(() => {
 			<a-scene
 				bind:this={arScene}
 				vr-mode-ui="enabled: false"
-				arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+				arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
 				renderer="logarithmicDepthBuffer: true;"
 				embedded
 				loading-screen="enabled: false"
 				scene-listener
 				onclick={handleMapClick}
 			>
-  <a-entity curved-arrow position="0 0 -3"></a-entity>
+				<a-entity curved-arrow position="0 0 -3"></a-entity>
 
 				<a-entity camera="active: true; fov: 80"></a-entity>
 			</a-scene>
@@ -415,11 +412,6 @@ onDestroy(() => {
 	color: white;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 	z-index: 1000;
-}
-:global {
-#arjs-video {
-    z-index: 999 !important;
-}
 }
 
 .back-btn {
