@@ -118,10 +118,6 @@ const initializeMap = (lat: number, lng: number) => {
 		})
 			.setLngLat([lng, lat])
 			.addTo(map);
-
-		// Add navigation controls
-		map.addControl(new maplibregl.NavigationControl(), "top-right");
-
 		// Add geolocate control
 		const geolocateControl = new maplibregl.GeolocateControl({
 			positionOptions: {
@@ -234,11 +230,17 @@ const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
 		if (isDeviceUpright) {
 			mapContainer.style.display = "none";
 			arScene.style.display = "block";
-			document.getElementById("arjs-video").style.display = "block";
+			const arjsVideo = document.getElementById("arjs-video");
+			if (arjsVideo?.style) {
+				arjsVideo.style.display = "block";
+			}
 		} else {
 			mapContainer.style.display = "block";
 			arScene.style.display = "none";
-			document.getElementById("arjs-video").style.display = "none";
+			const arjsVideo = document.getElementById("arjs-video");
+			if (arjsVideo?.style) {
+				arjsVideo.style.display = "none";
+			}
 		}
 
 		// Reset camera states when switching to AR view
@@ -327,7 +329,7 @@ onDestroy(() => {
 	window.removeEventListener("deviceorientation", handleDeviceOrientation);
 	window.removeEventListener("ar-camera-loaded", () => {});
 	window.removeEventListener("ar-camera-error", () => {});
-	// Re-enable browser scrolling
+	document.getElementById("arjs-video")?.remove();
 	document.body.style.overflow = "";
 });
 </script>
@@ -352,12 +354,6 @@ onDestroy(() => {
 		{/if}
 		<!-- {#if isDeviceUpright} -->
 		<div class="camera-view">
-			{#if cameraLoading && !cameraError}
-				<div class="camera-loading">
-					<div class="spinner"></div>
-					<p>Starting camera...</p>
-				</div>
-			{/if}
 			{#if cameraError}
 				<div class="camera-error">
 					<div class="error-icon">📷</div>
@@ -408,6 +404,7 @@ onDestroy(() => {
 	align-items: center;
 	justify-content: space-between;
 	padding: 15px 20px;
+	padding-top: max(15px, env(safe-area-inset-top));
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	color: white;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
