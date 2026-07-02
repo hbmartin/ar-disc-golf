@@ -88,7 +88,7 @@ const checkPermissionStatus = async () => {
 	}
 };
 
-const requestLocation = async () => {
+async function requestLocation() {
 	loading = true;
 	error = null;
 
@@ -105,27 +105,20 @@ const requestLocation = async () => {
 	} finally {
 		loading = false;
 	}
-};
+}
 
-const retryLocation = () => {
+function retryLocation() {
 	error = null;
 	requestLocation();
-};
+}
 
 onMount(() => {
 	checkPermissionStatus();
 	requestLocation();
 });
 
-// Export reactive values and functions for parent components
-export {
-	location,
-	error,
-	loading,
-	permissionStatus,
-	requestLocation,
-	retryLocation,
-};
+// Expose the current fix to parent components (e.g. Home's practice course)
+export { location };
 </script>
 
 <div class="location-service">

@@ -1,37 +1,27 @@
 <script lang="ts">
 import { push } from "svelte-spa-router";
 import MapGame from "./MapGame.svelte";
-import { getCurrentGameId } from "./utils.ts";
+import { loadGame } from "./gameState.ts";
 
 const { params }: { params: { id: string } } = $props();
+
+const session = $derived(loadGame(params.id));
 
 const goHome = () => {
 	push("/");
 };
-
-// Verify that the game ID matches what's stored in localStorage
-let isValidGame = $state(false);
-
-// Check validation on mount and when params change
-$effect(() => {
-	const storedGameId = getCurrentGameId();
-	isValidGame = storedGameId === params.id;
-
-	if (!isValidGame) {
-		// Small delay to allow the component to render before redirecting
-		setTimeout(() => {
-			goHome();
-		}, 100);
-	}
-});
 </script>
 
-{#if isValidGame}
-	<MapGame onBack={goHome} gameId={params.id} />
+{#if session}
+	{#key session.id}
+		<MapGame onBack={goHome} {session} />
+	{/key}
 {:else}
 	<div class="invalid-game">
-		<h2>Invalid Game Session</h2>
-		<p>This game session is not valid. Please start a new game.</p>
+		<h2>Game Not Found</h2>
+		<p>
+			This game session doesn't exist or has been cleared. Start a new game.
+		</p>
 		<button onclick={goHome}>Go Home</button>
 	</div>
 {/if}
