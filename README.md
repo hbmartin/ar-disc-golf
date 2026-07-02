@@ -1,99 +1,55 @@
 # 🥏 AR Disc Golf
 
-An Augmented Reality Disc Golf Experience built with Svelte, TypeScript, and Vite, featuring GPS location tracking and AR capabilities. Users play courses using GPS tracking and augmented reality guidance.
+A mobile web app for playing disc golf with GPS course maps, live scorekeeping, and an augmented-reality arrow that points you at the basket. Built with Svelte 5, TypeScript, Vite, MapLibre GL, and A-Frame/AR.js — installable as a PWA.
+
+## How it works
+
+1. **Pick a course** on the home screen: a built-in course, one you created, one imported from a share code, or a practice round generated around wherever you're standing.
+2. **Follow the map** from tee to basket. The map shows tee and basket markers for every hole, a fairway line, 10/25/50 m distance rings around the current basket, your live position, and a GPS-accuracy circle.
+3. **Hold your phone up** to switch to the AR view: a 3D arrow points toward the basket and a HUD shows the remaining distance. Tilt it back down to return to the map. (The switch uses hysteresis so it doesn't flicker at the threshold.)
+4. **Tap Throw** after each throw. When you get within 10 m of the basket the app prompts you to finish the hole, then advances to the next tee. After the last hole you get a results screen, and the round is saved to your history.
 
 ## Features
 
-### 🌍 GPS Location Services
-- **Real-time Location Tracking**: Uses browser's Geolocation API for precise positioning
-- **Permission Handling**: Graceful permission requests with user-friendly error messages
-- **High Accuracy Mode**: Optimized for outdoor GPS accuracy
-- **Privacy-Focused**: Location data stays on your device and is never transmitted
+- **Courses**: built-in course data, plus a course creator (`#/create`) — walk the course and drop tee/basket pins at your GPS position (or tap the map), set pars, and save. Share courses between devices with a copy-paste share code.
+- **Scoring**: per-hole throw counter with undo, live scorecard, score vs par, round history stored on the device.
+- **AR guidance**: bearing to the basket is computed from GPS and compass heading; WebXR is used on devices that support `immersive-ar`, with AR.js webcam rendering as the fallback.
+- **PWA**: installable, works full-screen, keeps the screen awake during a round (Wake Lock API), and caches map tiles you've viewed so courses with poor cell coverage still show a map.
+- **Demo mode**: if location is denied or unavailable you can play a simulated round — tap the map to move yourself around the course.
+- **Privacy**: all location data, courses, scores, and history stay in your browser's local storage. Nothing is transmitted to a server.
 
-### 📱 User Interface
-- **Modern Design**: Beautiful gradient-based UI with responsive layout
-- **Interactive Elements**: Toggle location details, retry functionality, and refresh options
-- **Error Handling**: Clear error messages with step-by-step resolution guidance
-- **Mobile Optimized**: Works seamlessly on both desktop and mobile devices
+## Development
 
-### 🎯 AR Gameplay: Play courses with AR arrow guidance and map navigation
-- **A-Frame Integration**: Built with A-Frame for future AR features
-- **AR.js Support**: Ready for marker-based and location-based AR
-- **Extensible Architecture**: Modular design for easy feature additions
-
-## Quick Start
-
-### Installation
 ```bash
 npm install
+npm run dev       # dev server
+npm run build     # production build
+npm run preview   # preview the production build
+npm run test      # vitest unit tests
+npm run lint      # biome + prettier
+npm run check     # svelte-check + tsc
 ```
 
-### Development
-```bash
-npm run dev
-```
+CI runs lint, typecheck, tests, and a build on every pull request and on pushes to `main` (`.github/workflows/lint.yml`). Pushes to `main` also deploy to Cloudflare Pages (`.github/workflows/deploy.yml`).
 
-### Build for Production
-```bash
-npm run build
-```
+## Architecture
 
-### Preview Production Build
-```bash
-npm run preview
-```
+| Path | Purpose |
+| --- | --- |
+| `src/lib/geo.ts` | Haversine distance, bearings, destination points, circle rings |
+| `src/lib/courses.ts` | Built-in courses, custom-course storage, share-code encode/decode |
+| `src/lib/gameState.ts` | Game sessions, throw tracking, hole progression, round history |
+| `src/lib/orientation.ts` | Tilt hysteresis, compass heading, iOS permission handling |
+| `src/lib/ar.ts` | WebXR vs AR.js renderer detection |
+| `src/lib/wakeLock.ts` | Screen Wake Lock wrapper |
+| `src/lib/MapGame.svelte` | The in-game screen: map, AR view, HUD, scorecard |
+| `src/lib/CourseCreator.svelte` | Course creator |
+| `src/lib/Home.svelte` | Course selection, import, history |
 
-## Location Features
+The pure logic modules are unit-tested (`src/lib/*.test.ts`); the game state lives in localStorage under `discgolf.*` keys.
 
-The app includes comprehensive GPS location functionality:
+## Browser notes
 
-1. **Automatic Location Detection**: Requests location permission on first visit
-2. **Error Handling**: Graceful handling of permission denied, timeout, and unavailable scenarios
-3. **Retry Mechanism**: Easy retry functionality with clear instructions
-4. **Detailed Information**: Shows coordinates, accuracy, timestamp, and maps integration
-5. **Privacy Focused**: All location data stays on your device
-
-### Supported Browsers
-- Chrome/Chromium (full support)
-- Safari (full support)
-- Mobile browsers (responsive design)
-
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
-```
+- **Location** requires HTTPS (or localhost) and works best outdoors with high-accuracy GPS.
+- **Compass heading** comes from `webkitCompassHeading` on iOS and `deviceorientationabsolute` on Android Chrome; on iOS the app asks for motion permission when you start a game.
+- **AR view** uses the rear camera. iOS Safari and Android Chrome are the primary targets.

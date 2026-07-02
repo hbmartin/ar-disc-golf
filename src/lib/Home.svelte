@@ -1,40 +1,98 @@
 <script lang="ts">
 import { push } from "svelte-spa-router";
 import LocationService from "./LocationService.svelte";
-import { generateGameId, saveGameId } from "./utils.ts";
+import {
+	BUILT_IN_COURSES,
+	DEMO_COURSE_ID,
+	createDemoCourse,
+	decodeCourseShare,
+	deleteCustomCourse,
+	listCustomCourses,
+	saveCustomCourse,
+} from "./courses.ts";
+import {
+	createGame,
+	formatScoreVsPar,
+	getCurrentGameId,
+	listRoundHistory,
+	loadGame,
+} from "./gameState.ts";
+import { distanceMeters, formatDistance } from "./geo.ts";
+import { requestOrientationPermission } from "./orientation.ts";
+import type { Course } from "./types.ts";
 
-let locationServiceRef: LocationService;
+let locationServiceRef: LocationService | undefined = $state();
 
-const requestOrientationPermission = async () => {
-	console.log("requestOrientationPermission");
-	if (
-		"DeviceOrientationEvent" in window &&
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-		typeof (DeviceOrientationEvent as any).requestPermission === "function"
-	) {
-		console.log("requestOrientationPermission on Safari");
-		try {
-			const permission =
-				await // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-				(DeviceOrientationEvent as any).requestPermission();
-			if (permission === "granted") {
-				console.log("Device orientation permission granted");
-			} else {
-				console.log("Device orientation permission denied");
-			}
-		} catch (error) {
-			console.error("Error requesting device orientation permission:", error);
-		}
+let customCourses = $state(listCustomCourses());
+let selectedCourseId = $state(DEMO_COURSE_ID);
+let importCode = $state("");
+let importMessage: string | null = $state(null);
+let roundHistory = $state(listRoundHistory());
+
+const resumableGame = $derived.by(() => {
+	const currentId = getCurrentGameId();
+	if (!currentId) return null;
+	const session = loadGame(currentId);
+	return session && session.completedAt === null ? session : null;
+});
+
+const courseLength = (course: Course): number =>
+	course.holes.reduce(
+		(sum, hole) => sum + distanceMeters(hole.tee, hole.basket),
+		0,
+	);
+
+const startGame = async () => {
+	// Must happen inside the click gesture for iOS to show the prompt
+	await requestOrientationPermission();
+
+	let course: Course | null = null;
+	if (selectedCourseId === DEMO_COURSE_ID) {
+		const here = locationServiceRef?.location;
+		course = createDemoCourse(
+			here
+				? { lat: here.latitude, lng: here.longitude }
+				: // No GPS fix: anchor the practice course at the first built-in
+					// course's tee so demo mode still has somewhere to play
+					BUILT_IN_COURSES[0].holes[0].tee,
+		);
 	} else {
-		console.log("Device orientation permission not required on this device");
+		course =
+			BUILT_IN_COURSES.find((c) => c.id === selectedCourseId) ??
+			customCourses.find((c) => c.id === selectedCourseId) ??
+			null;
+	}
+	if (!course) return;
+
+	const session = createGame(course);
+	push(`/game/${session.id}`);
+};
+
+const resumeGame = () => {
+	if (resumableGame) {
+		push(`/game/${resumableGame.id}`);
 	}
 };
 
-const startGame = async () => {
-	await requestOrientationPermission();
-	const gameId = generateGameId();
-	saveGameId(gameId);
-	push(`/game/${gameId}`);
+const importCourse = () => {
+	const course = decodeCourseShare(importCode.trim());
+	if (!course) {
+		importMessage = "That share code isn't valid.";
+		return;
+	}
+	saveCustomCourse(course);
+	customCourses = listCustomCourses();
+	selectedCourseId = course.id;
+	importCode = "";
+	importMessage = `Imported "${course.name}".`;
+};
+
+const removeCourse = (courseId: string) => {
+	deleteCustomCourse(courseId);
+	customCourses = listCustomCourses();
+	if (selectedCourseId === courseId) {
+		selectedCourseId = DEMO_COURSE_ID;
+	}
 };
 </script>
 
@@ -45,70 +103,157 @@ const startGame = async () => {
 	</header>
 
 	<div class="content">
+		{#if resumableGame}
+			<section class="resume-section">
+				<h2>⏱️ Game in Progress</h2>
+				<p>
+					Hole {resumableGame.currentHoleIndex + 1} of
+					{resumableGame.course.holes.length} on {resumableGame.course.name}
+				</p>
+				<button class="start-game-btn" onclick={resumeGame}>
+					▶️ Resume Round
+				</button>
+			</section>
+		{/if}
+
+		<section class="course-section">
+			<h2>⛳ Choose a Course</h2>
+			<div class="course-list">
+				<label
+					class="course-option"
+					class:selected={selectedCourseId === DEMO_COURSE_ID}
+				>
+					<input
+						type="radio"
+						name="course"
+						value={DEMO_COURSE_ID}
+						bind:group={selectedCourseId}
+					/>
+					<div class="course-info">
+						<span class="course-name">🧪 Practice round (right here)</span>
+						<span class="course-meta">
+							3 holes generated around your current location
+						</span>
+					</div>
+				</label>
+
+				{#each BUILT_IN_COURSES as course (course.id)}
+					<label
+						class="course-option"
+						class:selected={selectedCourseId === course.id}
+					>
+						<input
+							type="radio"
+							name="course"
+							value={course.id}
+							bind:group={selectedCourseId}
+						/>
+						<div class="course-info">
+							<span class="course-name">{course.name}</span>
+							<span class="course-meta">
+								{course.holes.length} holes ·
+								{formatDistance(courseLength(course))}
+							</span>
+						</div>
+					</label>
+				{/each}
+
+				{#each customCourses as course (course.id)}
+					<label
+						class="course-option"
+						class:selected={selectedCourseId === course.id}
+					>
+						<input
+							type="radio"
+							name="course"
+							value={course.id}
+							bind:group={selectedCourseId}
+						/>
+						<div class="course-info">
+							<span class="course-name">{course.name}</span>
+							<span class="course-meta">
+								{course.holes.length} holes ·
+								{formatDistance(courseLength(course))} · custom
+							</span>
+						</div>
+						<button
+							class="delete-course-btn"
+							title="Delete course"
+							onclick={(e) => {
+								e.preventDefault();
+								removeCourse(course.id);
+							}}
+						>
+							🗑
+						</button>
+					</label>
+				{/each}
+			</div>
+
+			<div class="location-actions">
+				<button onclick={startGame} class="start-game-btn">
+					🎮 Start Game
+				</button>
+				<a class="create-link" href="#/create">✏️ Create your own course</a>
+			</div>
+
+			<details class="import-details">
+				<summary>Import a shared course</summary>
+				<div class="import-row">
+					<input
+						type="text"
+						placeholder="Paste share code"
+						bind:value={importCode}
+					/>
+					<button onclick={importCourse} disabled={!importCode.trim()}>
+						Import
+					</button>
+				</div>
+				{#if importMessage}
+					<p class="import-message">{importMessage}</p>
+				{/if}
+			</details>
+		</section>
+
 		<section class="location-section">
 			<h2>📍 Your Location</h2>
 			<LocationService bind:this={locationServiceRef} />
-
-			<div class="location-actions">
-				<button onclick={startGame} class="start-game-btn" disabled={false}>
-					🎮 Start Game
-				</button>
-				{#if locationServiceRef?.error}
-					<p class="demo-note">
-						Demo mode available - click Start Game to test with sample location
-					</p>
-				{/if}
-			</div>
 		</section>
 
-		<section class="ar-section">
-			<h2>🎯 AR Features</h2>
-			<div class="feature-grid">
-				<div class="feature-card">
-					<div class="feature-icon">📱</div>
-					<h3>AR Camera</h3>
-					<p>
-						Use your device camera to view augmented reality disc golf targets
-						and obstacles.
-					</p>
-					<button class="feature-btn" disabled>Coming Soon</button>
-				</div>
-
-				<div class="feature-card">
-					<div class="feature-icon">🎯</div>
-					<h3>Target Tracking</h3>
-					<p>
-						Track your throws and measure distances to targets using GPS and AR
-						technology.
-					</p>
-					<button class="feature-btn" disabled>Coming Soon</button>
-				</div>
-
-				<div class="feature-card">
-					<div class="feature-icon">📊</div>
-					<h3>Score Tracking</h3>
-					<p>
-						Keep track of your scores and improve your disc golf game with
-						detailed analytics.
-					</p>
-					<button class="feature-btn" disabled>Coming Soon</button>
-				</div>
-			</div>
-		</section>
+		{#if roundHistory.length > 0}
+			<section class="history-section">
+				<h2>📊 Recent Rounds</h2>
+				<ul class="history-list">
+					{#each roundHistory as round (round.id)}
+						<li>
+							<span class="history-course">{round.courseName}</span>
+							<span class="history-score">
+								{round.totalStrokes} throws ·
+								{formatScoreVsPar(round.totalStrokes, round.totalPar)}
+							</span>
+							<span class="history-date">
+								{new Date(round.completedAt).toLocaleDateString()}
+							</span>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 
 		<section class="info-section">
-			<h2>ℹ️ About Location Services</h2>
+			<h2>ℹ️ How It Works</h2>
 			<div class="info-content">
 				<p>
-					This app uses your device's GPS to provide location-based features for
-					disc golf. Your location data is only used locally and is not stored
-					or transmitted to any servers.
+					Pick a course (or generate a practice round wherever you're standing),
+					then follow the map from tee to basket. Hold your phone up to see an
+					AR arrow pointing at the basket; hold it flat to see the map. Tap
+					Throw after each throw, and finish the hole when you hole out.
 				</p>
 				<ul>
-					<li>📍 Accurate positioning for AR features</li>
-					<li>📏 Distance measurements to targets</li>
-					<li>🗺️ Course mapping and navigation</li>
-					<li>🔒 Privacy-focused - data stays on your device</li>
+					<li>🗺️ Map shows tees, baskets, fairway lines, and distance rings</li>
+					<li>📱 AR arrow and live distance guide you to the basket</li>
+					<li>📊 Scorecard tracks throws vs par, with round history</li>
+					<li>🔒 Privacy-focused — location data stays on your device</li>
 				</ul>
 			</div>
 		</section>
@@ -169,9 +314,66 @@ section h2 {
 	font-weight: 600;
 }
 
+.resume-section p {
+	color: #4a5568;
+	margin: 0 0 15px 0;
+}
+
+.course-list {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.course-option {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 16px;
+	border: 2px solid #e2e8f0;
+	border-radius: 12px;
+	cursor: pointer;
+	transition: border-color 0.2s ease;
+}
+
+.course-option.selected {
+	border-color: #667eea;
+	background: rgba(102, 126, 234, 0.06);
+}
+
+.course-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex: 1;
+	text-align: left;
+}
+
+.course-name {
+	font-weight: 600;
+	color: #2d3748;
+}
+
+.course-meta {
+	font-size: 0.85em;
+	color: #718096;
+}
+
+.delete-course-btn {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-size: 1.1em;
+	padding: 6px;
+}
+
 .location-actions {
 	margin-top: 20px;
 	text-align: center;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	align-items: center;
 }
 
 .start-game-btn {
@@ -188,72 +390,84 @@ section h2 {
 	min-width: 160px;
 }
 
-.start-game-btn:hover:not(:disabled) {
+.start-game-btn:hover {
 	transform: translateY(-2px);
 	box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
 }
 
-.start-game-btn:disabled {
-	background: #cbd5e0;
-	cursor: not-allowed;
-	box-shadow: none;
-	transform: none;
+.create-link {
+	color: #667eea;
+	font-weight: 600;
 }
 
-.demo-note {
-	margin-top: 10px;
-	font-size: 0.9em;
+.import-details {
+	margin-top: 20px;
 	color: #4a5568;
-	text-align: center;
-	font-style: italic;
 }
 
-.feature-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-	gap: 25px;
-}
-
-.feature-card {
-	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-	border-radius: 16px;
-	padding: 30px;
-	text-align: center;
-	color: white;
-	transition: transform 0.3s ease;
-	box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
-}
-
-.feature-card:hover {
-	transform: translateY(-5px);
-}
-
-.feature-icon {
-	font-size: 3em;
-	margin-bottom: 15px;
-}
-
-.feature-card h3 {
-	margin: 0 0 15px 0;
-	font-size: 1.4em;
+.import-details summary {
+	cursor: pointer;
 	font-weight: 600;
 }
 
-.feature-card p {
-	margin: 0 0 20px 0;
-	line-height: 1.6;
-	opacity: 0.9;
+.import-row {
+	display: flex;
+	gap: 10px;
+	margin-top: 12px;
 }
 
-.feature-btn {
-	background: rgba(255, 255, 255, 0.2);
-	border: 2px solid rgba(255, 255, 255, 0.3);
+.import-row input {
+	flex: 1;
+	padding: 10px 14px;
+	border: 2px solid #e2e8f0;
+	border-radius: 10px;
+	font-size: 0.95em;
+}
+
+.import-row button {
+	background: #667eea;
 	color: white;
-	padding: 10px 20px;
-	border-radius: 20px;
+	border: none;
+	border-radius: 10px;
+	padding: 10px 18px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.import-row button:disabled {
+	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+.import-message {
+	margin: 10px 0 0 0;
+	font-size: 0.9em;
+	color: #38a169;
+}
+
+.history-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.history-list li {
+	display: flex;
+	justify-content: space-between;
+	gap: 15px;
+	padding: 12px 0;
+	border-bottom: 1px solid #e2e8f0;
+	color: #4a5568;
+	flex-wrap: wrap;
+}
+
+.history-list li:last-child {
+	border-bottom: none;
+}
+
+.history-course {
 	font-weight: 600;
-	opacity: 0.7;
+	color: #2d3748;
 }
 
 .info-content p {
@@ -261,12 +475,14 @@ section h2 {
 	line-height: 1.7;
 	color: #4a5568;
 	font-size: 1.1em;
+	text-align: left;
 }
 
 .info-content ul {
 	list-style: none;
 	padding: 0;
 	margin: 0;
+	text-align: left;
 }
 
 .info-content li {
@@ -295,10 +511,6 @@ section h2 {
 
 	section {
 		padding: 20px;
-	}
-
-	.feature-grid {
-		grid-template-columns: 1fr;
 	}
 }
 </style>

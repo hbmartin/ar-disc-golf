@@ -63,6 +63,17 @@ button:focus-visible {
 	outline: 4px auto -webkit-focus-ring-color;
 }
 
+/*
+ * AR.js appends its camera <video> directly to <body>, outside any component,
+ * so its visibility is driven by a body class toggled from game state.
+ */
+#arjs-video {
+	display: none;
+}
+body.ar-video-visible #arjs-video {
+	display: block;
+}
+
 @media (prefers-color-scheme: light) {
 	:root {
 		color: #213547;
