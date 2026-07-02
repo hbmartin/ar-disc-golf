@@ -8,7 +8,7 @@ interface DeviceOrientationEventInit {
 	absolute?: boolean;
 }
 
-global.DeviceOrientationEvent = class DeviceOrientationEvent extends Event {
+globalThis.DeviceOrientationEvent = class DeviceOrientationEvent extends Event {
 	alpha: number | null;
 	beta: number | null;
 	gamma: number | null;
@@ -24,7 +24,7 @@ global.DeviceOrientationEvent = class DeviceOrientationEvent extends Event {
 } as any;
 
 // Mock geolocation
-Object.defineProperty(global.navigator, "geolocation", {
+Object.defineProperty(globalThis.navigator, "geolocation", {
 	value: {
 		getCurrentPosition: vi.fn(),
 		watchPosition: vi.fn(),
