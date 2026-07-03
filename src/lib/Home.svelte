@@ -27,6 +27,7 @@ let customCourses = $state(listCustomCourses());
 let selectedCourseId = $state(DEMO_COURSE_ID);
 let importCode = $state("");
 let importMessage: string | null = $state(null);
+let importMessageKind: "success" | "error" | null = $state(null);
 let roundHistory = $state(listRoundHistory());
 
 const resumableGame = $derived.by(() => {
@@ -78,13 +79,19 @@ const importCourse = () => {
 	const course = decodeCourseShare(importCode.trim());
 	if (!course) {
 		importMessage = "That share code isn't valid.";
+		importMessageKind = "error";
 		return;
 	}
-	saveCustomCourse(course);
+	if (!saveCustomCourse(course)) {
+		importMessage = "Could not save that course. Storage may be full.";
+		importMessageKind = "error";
+		return;
+	}
 	customCourses = listCustomCourses();
 	selectedCourseId = course.id;
 	importCode = "";
 	importMessage = `Imported "${course.name}".`;
+	importMessageKind = "success";
 };
 
 const removeCourse = (courseId: string) => {
@@ -210,7 +217,13 @@ const removeCourse = (courseId: string) => {
 					</button>
 				</div>
 				{#if importMessage}
-					<p class="import-message">{importMessage}</p>
+					<p
+						class="import-message"
+						class:success={importMessageKind === "success"}
+						class:error={importMessageKind === "error"}
+					>
+						{importMessage}
+					</p>
 				{/if}
 			</details>
 		</section>
@@ -442,7 +455,15 @@ section h2 {
 .import-message {
 	margin: 10px 0 0 0;
 	font-size: 0.9em;
-	color: #38a169;
+	color: #4a5568;
+}
+
+.import-message.success {
+	color: #2f855a;
+}
+
+.import-message.error {
+	color: #c53030;
 }
 
 .history-list {

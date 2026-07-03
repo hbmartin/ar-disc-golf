@@ -45,7 +45,7 @@ export function compassHeading(event: CompassOrientationEvent): number | null {
 	) {
 		return event.webkitCompassHeading;
 	}
-	if (event.alpha === null) {
+	if (event.alpha === null || event.absolute !== true) {
 		return null;
 	}
 	return (360 - event.alpha + 360) % 360;

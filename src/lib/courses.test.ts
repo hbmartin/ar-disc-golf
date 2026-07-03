@@ -74,6 +74,33 @@ describe("isValidCourse", () => {
 			}),
 		).toBe(false);
 	});
+
+	it("rejects non-finite, fractional, and duplicate hole values", () => {
+		expect(
+			isValidCourse({
+				...sampleCourse,
+				holes: [{ ...sampleCourse.holes[0], par: Number.POSITIVE_INFINITY }],
+			}),
+		).toBe(false);
+		expect(
+			isValidCourse({
+				...sampleCourse,
+				holes: [{ ...sampleCourse.holes[0], number: 1.5 }],
+			}),
+		).toBe(false);
+		expect(
+			isValidCourse({
+				...sampleCourse,
+				holes: [
+					sampleCourse.holes[0],
+					{
+						...sampleCourse.holes[0],
+						par: 4,
+					},
+				],
+			}),
+		).toBe(false);
+	});
 });
 
 describe("custom course storage", () => {
@@ -114,6 +141,27 @@ describe("course sharing", () => {
 		expect(decoded?.holes).toEqual(sampleCourse.holes);
 		// Imported courses get a fresh id to avoid collisions
 		expect(decoded?.id).not.toBe(sampleCourse.id);
+	});
+
+	it("round-trips large course share payloads without argument spreading", () => {
+		const largeCourse: Course = {
+			...sampleCourse,
+			name: "Large ".repeat(20_000),
+		};
+
+		const decoded = decodeCourseShare(encodeCourseShare(largeCourse));
+
+		expect(decoded?.name).toBe(largeCourse.name);
+	});
+
+	it("decodes share codes after restoring stripped padding", () => {
+		const base64 = btoa(JSON.stringify(sampleCourse));
+		const unpaddedUrlCode = base64
+			.replaceAll("+", "-")
+			.replaceAll("/", "_")
+			.replace(/=+$/, "");
+
+		expect(decodeCourseShare(unpaddedUrlCode)?.name).toBe(sampleCourse.name);
 	});
 
 	it("returns null for garbage input", () => {

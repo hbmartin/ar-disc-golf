@@ -43,9 +43,14 @@ describe("compassHeading", () => {
 		expect(compassHeading({ alpha: 100, webkitCompassHeading: 42 })).toBe(42);
 	});
 
-	it("derives heading from alpha (counterclockwise) otherwise", () => {
-		expect(compassHeading({ alpha: 90 })).toBe(270);
-		expect(compassHeading({ alpha: 0 })).toBe(0);
+	it("derives heading from absolute alpha (counterclockwise) otherwise", () => {
+		expect(compassHeading({ alpha: 90, absolute: true })).toBe(270);
+		expect(compassHeading({ alpha: 0, absolute: true })).toBe(0);
+	});
+
+	it("ignores relative alpha readings", () => {
+		expect(compassHeading({ alpha: 90, absolute: false })).toBeNull();
+		expect(compassHeading({ alpha: 90 })).toBeNull();
 	});
 
 	it("returns null when no data is available", () => {
@@ -54,7 +59,11 @@ describe("compassHeading", () => {
 
 	it("ignores NaN webkitCompassHeading", () => {
 		expect(
-			compassHeading({ alpha: 90, webkitCompassHeading: Number.NaN }),
+			compassHeading({
+				alpha: 90,
+				absolute: true,
+				webkitCompassHeading: Number.NaN,
+			}),
 		).toBe(270);
 	});
 });
@@ -72,6 +81,11 @@ describe("requestOrientationPermission", () => {
 
 	it("reports no permission needed on non-iOS platforms", () => {
 		expect(needsOrientationPermission()).toBe(false);
+	});
+
+	it("reports permission needed when requestPermission is present", () => {
+		orientationStatic.requestPermission = vi.fn().mockResolvedValue("granted");
+		expect(needsOrientationPermission()).toBe(true);
 	});
 
 	it("resolves true without prompting on non-iOS platforms", async () => {

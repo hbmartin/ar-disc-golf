@@ -1,12 +1,19 @@
 <script lang="ts">
-import { formatScoreVsPar, totalPar, totalStrokes } from "./gameState.ts";
+import {
+	formatScoreVsPar,
+	playedPar,
+	totalPar,
+	totalStrokes,
+} from "./gameState.ts";
 import { distanceMeters, formatDistance } from "./geo.ts";
 import type { GameSession } from "./types.ts";
 
 const { session }: { session: GameSession } = $props();
 
 const strokesTotal = $derived(totalStrokes(session));
-const parTotal = $derived(totalPar(session.course));
+const parTotal = $derived(
+	session.completedAt === null ? playedPar(session) : totalPar(session.course),
+);
 </script>
 
 <div class="scorecard">
@@ -21,7 +28,7 @@ const parTotal = $derived(totalPar(session.course));
 			</tr>
 		</thead>
 		<tbody>
-			{#each session.course.holes as hole, i (hole.number)}
+			{#each session.course.holes as hole, i (`${hole.number}-${i}`)}
 				<tr
 					class:current={i === session.currentHoleIndex && !session.completedAt}
 				>
