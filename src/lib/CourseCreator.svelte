@@ -24,8 +24,20 @@ let mapReady = $state(false);
 
 const canSave = $derived(holes.length > 0 && courseName.trim().length > 0);
 
-const placePoint = (point: LatLng) => {
+const invalidateShareCode = () => {
+	if (shareCode) {
+		statusMessage = "Course changed. Save again to refresh the share code.";
+	}
 	shareCode = null;
+};
+
+const setCourseName = (name: string) => {
+	courseName = name;
+	invalidateShareCode();
+};
+
+const placePoint = (point: LatLng) => {
+	invalidateShareCode();
 	if (placementMode === "tee") {
 		pendingTee = point;
 		placementMode = "basket";
@@ -50,10 +62,12 @@ const placeAtMyLocation = () => {
 };
 
 const setPar = (index: number, par: number) => {
+	invalidateShareCode();
 	holes = holes.map((hole, i) => (i === index ? { ...hole, par } : hole));
 };
 
 const removeHole = (index: number) => {
+	invalidateShareCode();
 	holes = holes
 		.filter((_, i) => i !== index)
 		.map((hole, i) => ({ ...hole, number: i + 1 }));
@@ -87,6 +101,19 @@ const copyShareCode = async () => {
 		statusMessage = "Share code copied to clipboard.";
 	} catch {
 		statusMessage = "Copy failed — select and copy the code manually.";
+	}
+};
+
+const getLocationStatusMessage = (error: GeolocationPositionError): string => {
+	switch (error.code) {
+		case error.PERMISSION_DENIED:
+			return "Location access denied. You can still place points by tapping the map.";
+		case error.POSITION_UNAVAILABLE:
+			return "Location is unavailable. Check location settings or place points on the map.";
+		case error.TIMEOUT:
+			return "Location request timed out. Walk outside, wait for GPS, or tap the map.";
+		default:
+			return "Could not get your location. You can still place points by tapping the map.";
 	}
 };
 
@@ -155,6 +182,8 @@ const initializeMap = (center: LatLng, zoom: number) => {
 onMount(() => {
 	if (!navigator.geolocation) {
 		// No GPS: still usable — pan the world map and tap to place points
+		statusMessage =
+			"GPS is not available in this browser. Place points by tapping the map.";
 		initializeMap({ lat: 20, lng: 0 }, 2);
 		return;
 	}
@@ -163,7 +192,8 @@ onMount(() => {
 			position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 			initializeMap(position, 17);
 		},
-		() => {
+		(error) => {
+			statusMessage = getLocationStatusMessage(error);
 			initializeMap({ lat: 20, lng: 0 }, 2);
 		},
 		{ enableHighAccuracy: true, timeout: 10000 },
@@ -172,7 +202,9 @@ onMount(() => {
 		(pos) => {
 			position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 		},
-		() => {},
+		(error) => {
+			statusMessage = getLocationStatusMessage(error);
+		},
 		{ enableHighAccuracy: true },
 	);
 });
@@ -242,8 +274,7 @@ onDestroy(() => {
 									{/each}
 								</select>
 							</label>
-							<button class="small-btn" onclick={() => removeHole(i)}>🗑</button
-							>
+							<button class="small-btn" onclick={() => removeHole(i)}>🗑</button>
 						</li>
 					{/each}
 				</ul>
@@ -257,7 +288,8 @@ onDestroy(() => {
 				<input
 					type="text"
 					placeholder="Course name"
-					bind:value={courseName}
+					value={courseName}
+					oninput={(e) => setCourseName(e.currentTarget.value)}
 					maxlength="60"
 				/>
 				<button class="save-btn" onclick={saveCourse} disabled={!canSave}>

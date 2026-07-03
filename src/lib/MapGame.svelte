@@ -49,6 +49,7 @@ AFRAME.registerComponent("direction-arrow", {
 <script lang="ts">
 import maplibregl from "maplibre-gl";
 import { onDestroy, onMount } from "svelte";
+import type { FeatureCollection } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { type ARMode, detectARMode } from "./ar.ts";
 import {
@@ -89,7 +90,8 @@ const {
 	session: GameSession;
 } = $props();
 
-let session = $state(initialSession);
+const getInitialSession = () => initialSession;
+let session = $state(getInitialSession());
 
 let mapContainer: HTMLDivElement;
 let arrowAnchor: HTMLElement | null = $state(null);
@@ -138,7 +140,7 @@ const arrowRotation = $derived(
 
 // ---------------------------------------------------------------- map layers
 
-const holeLinesGeoJson = (): GeoJSON.FeatureCollection => ({
+const holeLinesGeoJson = (): FeatureCollection => ({
 	type: "FeatureCollection",
 	features: session.course.holes.map((hole, i) => ({
 		type: "Feature",
@@ -153,7 +155,7 @@ const holeLinesGeoJson = (): GeoJSON.FeatureCollection => ({
 	})),
 });
 
-const distanceRingsGeoJson = (): GeoJSON.FeatureCollection => ({
+const distanceRingsGeoJson = (): FeatureCollection => ({
 	type: "FeatureCollection",
 	features: DISTANCE_RING_RADII_M.map((radius) => ({
 		type: "Feature",
@@ -165,10 +167,10 @@ const distanceRingsGeoJson = (): GeoJSON.FeatureCollection => ({
 	})),
 });
 
-const accuracyGeoJson = (): GeoJSON.FeatureCollection => ({
+const accuracyGeoJson = (): FeatureCollection => ({
 	type: "FeatureCollection",
 	features:
-		position && accuracy
+		position !== null && accuracy !== null
 			? [
 					{
 						type: "Feature",
@@ -182,7 +184,7 @@ const accuracyGeoJson = (): GeoJSON.FeatureCollection => ({
 			: [],
 });
 
-const setSourceData = (id: string, data: GeoJSON.FeatureCollection) => {
+const setSourceData = (id: string, data: FeatureCollection) => {
 	const source = map?.getSource(id) as maplibregl.GeoJSONSource | undefined;
 	source?.setData(data);
 };
@@ -345,6 +347,13 @@ const getLocationErrorMessage = (error: GeolocationPositionError): string => {
 	}
 };
 
+const clearLocationWatch = () => {
+	if (watchId !== null) {
+		navigator.geolocation.clearWatch(watchId);
+		watchId = null;
+	}
+};
+
 const startLocationTracking = () => {
 	if (!navigator.geolocation) {
 		locationError =
@@ -359,9 +368,12 @@ const startLocationTracking = () => {
 		maximumAge: 0,
 	};
 
+	clearLocationWatch();
+
 	navigator.geolocation.getCurrentPosition(
 		(pos) => {
 			const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+			locationError = null;
 			initializeMap(point);
 			updateUserPosition(point, pos.coords.accuracy);
 		},
@@ -376,10 +388,12 @@ const startLocationTracking = () => {
 	watchId = navigator.geolocation.watchPosition(
 		(pos) => {
 			if (demoMode) return;
-			updateUserPosition(
-				{ lat: pos.coords.latitude, lng: pos.coords.longitude },
-				pos.coords.accuracy,
-			);
+			const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+			if (!map) {
+				locationError = null;
+				initializeMap(point);
+			}
+			updateUserPosition(point, pos.coords.accuracy);
 			if (pos.coords.heading !== null && !Number.isNaN(pos.coords.heading)) {
 				gpsHeading = pos.coords.heading;
 			}
@@ -526,9 +540,7 @@ onMount(() => {
 
 onDestroy(() => {
 	cleanup.abort();
-	if (watchId !== null) {
-		navigator.geolocation.clearWatch(watchId);
-	}
+	clearLocationWatch();
 	map?.remove();
 	releaseWakeLock?.();
 	document.getElementById("arjs-video")?.remove();

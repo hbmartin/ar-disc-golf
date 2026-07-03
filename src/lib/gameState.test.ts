@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	clearCurrentGame,
 	completeHole,
@@ -7,6 +7,7 @@ import {
 	getCurrentGameId,
 	listRoundHistory,
 	loadGame,
+	playedPar,
 	recordThrow,
 	totalPar,
 	totalStrokes,
@@ -53,6 +54,51 @@ describe("createGame / loadGame", () => {
 		expect(loadGame("nope")).toBeNull();
 		localStorage.setItem("discgolf.game.bad", '{"id":"bad"}');
 		expect(loadGame("bad")).toBeNull();
+	});
+
+	it("rejects sessions with invalid hole indexes or completion values", () => {
+		const session = createGame(course);
+		localStorage.setItem(
+			`discgolf.game.${session.id}`,
+			JSON.stringify({ ...session, currentHoleIndex: 99 }),
+		);
+		expect(loadGame(session.id)).toBeNull();
+
+		localStorage.setItem(
+			`discgolf.game.${session.id}`,
+			JSON.stringify({ ...session, currentHoleIndex: 0, completedAt: "done" }),
+		);
+		expect(loadGame(session.id)).toBeNull();
+	});
+
+	it("keeps the current-game pointer only after session persistence succeeds", () => {
+		const first = createGame(course);
+		const originalSetItem = localStorage.setItem.bind(localStorage);
+		const setItem = vi
+			.spyOn(localStorage, "setItem")
+			.mockImplementation((key, value) => {
+				if (key.startsWith("discgolf.game.")) {
+					throw new Error("quota");
+				}
+				return originalSetItem(key, value);
+			});
+		try {
+			createGame(course);
+		} finally {
+			setItem.mockRestore();
+		}
+
+		expect(getCurrentGameId()).toBe(first.id);
+		expect(loadGame(first.id)).toEqual(first);
+	});
+
+	it("removes the previous current session after creating a new game", () => {
+		const first = createGame(course);
+		const second = createGame(course);
+
+		expect(getCurrentGameId()).toBe(second.id);
+		expect(loadGame(first.id)).toBeNull();
+		expect(loadGame(second.id)).toEqual(second);
 	});
 });
 
@@ -122,6 +168,7 @@ describe("score helpers", () => {
 		let session = createGame(course);
 		session = recordThrow(session);
 		expect(totalStrokes(session)).toBe(1);
+		expect(playedPar(session)).toBe(3);
 	});
 
 	it("formats score vs par like a leaderboard", () => {

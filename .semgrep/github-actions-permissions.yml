@@ -1,0 +1,18 @@
+rules:
+  - id: github-actions-pull-request-explicit-permissions
+    message: Workflows triggered by pull_request should declare explicit least-privilege permissions.
+    severity: WARNING
+    languages:
+      - yaml
+    paths:
+      include:
+        - /.github/workflows/*.yml
+        - /.github/workflows/*.yaml
+    patterns:
+      - pattern-inside: |
+          on:
+            pull_request: ...
+          ...
+      - pattern-not-inside: |
+          permissions: {}
+          ...

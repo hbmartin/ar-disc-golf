@@ -9,6 +9,7 @@ const ROUND_HISTORY_KEY = "discgolf.roundHistory";
 const MAX_HISTORY = 50;
 
 export function createGame(course: Course): GameSession {
+	const previousId = getCurrentGameId();
 	const session: GameSession = {
 		id: generateId(),
 		course,
@@ -17,8 +18,11 @@ export function createGame(course: Course): GameSession {
 		startedAt: Date.now(),
 		completedAt: null,
 	};
-	saveGame(session);
-	writeJson(CURRENT_GAME_KEY, session.id);
+	if (saveGame(session) && writeJson(CURRENT_GAME_KEY, session.id)) {
+		if (previousId && previousId !== session.id) {
+			removeKey(GAME_KEY_PREFIX + previousId);
+		}
+	}
 	return session;
 }
 
@@ -31,14 +35,25 @@ function isValidSession(value: unknown): value is GameSession {
 		return false;
 	}
 	const session = value as Record<string, unknown>;
+	const course = session.course;
+	const currentHoleIndex = session.currentHoleIndex;
+	const strokes = session.strokes;
+	const startedAt = session.startedAt;
+	const completedAt = session.completedAt;
 	return (
 		typeof session.id === "string" &&
-		isValidCourse(session.course) &&
-		typeof session.currentHoleIndex === "number" &&
-		Array.isArray(session.strokes) &&
-		session.strokes.every((s) => typeof s === "number") &&
-		session.strokes.length === (session.course as Course).holes.length &&
-		typeof session.startedAt === "number"
+		isValidCourse(course) &&
+		typeof currentHoleIndex === "number" &&
+		Number.isInteger(currentHoleIndex) &&
+		currentHoleIndex >= 0 &&
+		currentHoleIndex < course.holes.length &&
+		Array.isArray(strokes) &&
+		strokes.length === course.holes.length &&
+		strokes.every((s) => Number.isInteger(s) && s >= 0) &&
+		typeof startedAt === "number" &&
+		Number.isFinite(startedAt) &&
+		(completedAt === null ||
+			(typeof completedAt === "number" && Number.isFinite(completedAt)))
 	);
 }
 
@@ -102,6 +117,13 @@ export function totalStrokes(session: GameSession): number {
 
 export function totalPar(course: Course): number {
 	return course.holes.reduce((sum, hole) => sum + hole.par, 0);
+}
+
+export function playedPar(session: GameSession): number {
+	return session.course.holes.reduce(
+		(sum, hole, index) => sum + (session.strokes[index] > 0 ? hole.par : 0),
+		0,
+	);
 }
 
 /** Score relative to par formatted like a leaderboard: "E", "+2", "-1". */

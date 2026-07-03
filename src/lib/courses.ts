@@ -77,15 +77,18 @@ function isLatLng(value: unknown): value is LatLng {
 	);
 }
 
+function isPositiveInteger(value: unknown): value is number {
+	return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
 function isHole(value: unknown): value is Hole {
 	if (typeof value !== "object" || value === null) {
 		return false;
 	}
 	const hole = value as Record<string, unknown>;
 	return (
-		typeof hole.number === "number" &&
-		typeof hole.par === "number" &&
-		hole.par >= 1 &&
+		isPositiveInteger(hole.number) &&
+		isPositiveInteger(hole.par) &&
 		isLatLng(hole.tee) &&
 		isLatLng(hole.basket)
 	);
@@ -96,15 +99,19 @@ export function isValidCourse(value: unknown): value is Course {
 		return false;
 	}
 	const course = value as Record<string, unknown>;
-	return (
-		typeof course.id === "string" &&
-		course.id.length > 0 &&
-		typeof course.name === "string" &&
-		course.name.length > 0 &&
-		Array.isArray(course.holes) &&
-		course.holes.length > 0 &&
-		course.holes.every(isHole)
-	);
+	if (
+		typeof course.id !== "string" ||
+		course.id.length === 0 ||
+		typeof course.name !== "string" ||
+		course.name.length === 0 ||
+		!Array.isArray(course.holes) ||
+		course.holes.length === 0 ||
+		!course.holes.every(isHole)
+	) {
+		return false;
+	}
+	const holeNumbers = new Set(course.holes.map((hole) => hole.number));
+	return holeNumbers.size === course.holes.length;
 }
 
 export function listCustomCourses(): Course[] {
@@ -141,14 +148,43 @@ export function getCourseById(courseId: string): Course | null {
 /** Encode a course as a compact base64url share code. */
 export function encodeCourseShare(course: Course): string {
 	const json = JSON.stringify(course);
-	const base64 = btoa(String.fromCharCode(...new TextEncoder().encode(json)));
+	const base64 = btoa(bytesToBinaryString(new TextEncoder().encode(json)));
 	return base64.replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+}
+
+function bytesToBinaryString(bytes: Uint8Array): string {
+	const chunks: string[] = [];
+	let chunk = "";
+	for (const byte of bytes) {
+		chunk += String.fromCharCode(byte);
+		if (chunk.length >= 8192) {
+			chunks.push(chunk);
+			chunk = "";
+		}
+	}
+	if (chunk) {
+		chunks.push(chunk);
+	}
+	return chunks.join("");
+}
+
+function restoreBase64Padding(base64: string): string {
+	const remainder = base64.length % 4;
+	if (remainder === 0) {
+		return base64;
+	}
+	if (remainder === 1) {
+		throw new Error("Invalid base64url length");
+	}
+	return base64.padEnd(base64.length + (4 - remainder), "=");
 }
 
 /** Decode a share code back into a course; null if malformed or invalid. */
 export function decodeCourseShare(code: string): Course | null {
 	try {
-		const base64 = code.replaceAll("-", "+").replaceAll("_", "/");
+		const base64 = restoreBase64Padding(
+			code.trim().replaceAll("-", "+").replaceAll("_", "/"),
+		);
 		const bytes = Uint8Array.from(atob(base64), (ch) => ch.charCodeAt(0));
 		const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
 		if (!isValidCourse(parsed)) {
