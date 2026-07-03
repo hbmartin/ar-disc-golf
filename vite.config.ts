@@ -2,8 +2,31 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "vitest/config";
 
+const manualChunks = (id: string) => {
+	if (!id.includes("node_modules")) return;
+	if (
+		id.includes("maplibre-gl") ||
+		id.includes("@maplibre") ||
+		id.includes("@mapbox")
+	) {
+		return "vendor-map";
+	}
+	if (
+		id.includes("@ar-js-org") ||
+		id.includes("aframe") ||
+		id.includes("three") ||
+		id.includes("three-bmfont") ||
+		id.includes("artoolkit")
+	) {
+		return "vendor-ar";
+	}
+	if (id.includes("svelte") || id.includes("svelte-spa-router")) {
+		return "vendor-svelte";
+	}
+};
+
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
 	plugins: [
 		svelte(),
 		VitePWA({
@@ -51,6 +74,17 @@ export default defineConfig({
 			},
 		}),
 	],
+	build: {
+		manifest: mode === "analyze",
+		sourcemap: mode === "analyze",
+		// AR.js/A-Frame remains large, but it now lives in a lazy vendor chunk.
+		chunkSizeWarningLimit: 4000,
+		rollupOptions: {
+			output: {
+				manualChunks,
+			},
+		},
+	},
 	server: {
 		host: "0.0.0.0",
 		port: 54702,
@@ -65,4 +99,4 @@ export default defineConfig({
 		environment: "happy-dom",
 		setupFiles: ["src/test-setup.ts"],
 	},
-});
+}));

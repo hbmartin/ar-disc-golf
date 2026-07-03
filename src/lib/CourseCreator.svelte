@@ -1,16 +1,20 @@
 <script lang="ts">
-import maplibregl from "maplibre-gl";
 import { onDestroy, onMount } from "svelte";
 import { push } from "svelte-spa-router";
-import "maplibre-gl/dist/maplibre-gl.css";
 import { encodeCourseShare, saveCustomCourse } from "./courses.ts";
 import { distanceMeters, formatDistance } from "./geo.ts";
 import type { Course, Hole, LatLng } from "./types.ts";
 import { generateId } from "./utils.ts";
 
+type MapLibreModule = typeof import("maplibre-gl");
+type MapLibreMap = import("maplibre-gl").Map;
+type MapLibreMarker = import("maplibre-gl").Marker;
+
 let mapContainer: HTMLDivElement;
-let map: maplibregl.Map | null = null;
-let markers: maplibregl.Marker[] = [];
+let maplibregl: MapLibreModule | null = null;
+let maplibreLoad: Promise<MapLibreModule> | null = null;
+let map: MapLibreMap | null = null;
+let markers: MapLibreMarker[] = [];
 let watchId: number | null = null;
 
 let courseName = $state("");
@@ -24,8 +28,20 @@ let mapReady = $state(false);
 
 const canSave = $derived(holes.length > 0 && courseName.trim().length > 0);
 
-const invalidateShareCode = () => {
-	if (shareCode) {
+const loadMapLibre = async (): Promise<MapLibreModule> => {
+	if (maplibregl) return maplibregl;
+	maplibreLoad ??= Promise.all([
+		import("maplibre-gl"),
+		import("maplibre-gl/dist/maplibre-gl.css"),
+	]).then(([module]) => {
+		maplibregl = module;
+		return module;
+	});
+	return maplibreLoad;
+};
+
+const invalidateShareCode = (showStatus = true) => {
+	if (shareCode && showStatus) {
 		statusMessage = "Course changed. Save again to refresh the share code.";
 	}
 	shareCode = null;
@@ -37,7 +53,7 @@ const setCourseName = (name: string) => {
 };
 
 const placePoint = (point: LatLng) => {
-	invalidateShareCode();
+	invalidateShareCode(false);
 	if (placementMode === "tee") {
 		pendingTee = point;
 		placementMode = "basket";
@@ -122,25 +138,26 @@ const refreshMarkers = () => {
 		marker.remove();
 	}
 	markers = [];
-	if (!map) return;
+	const maplibre = maplibregl;
+	if (!map || !maplibre) return;
 
 	holes.forEach((hole) => {
 		const teeEl = document.createElement("div");
 		teeEl.className = "creator-marker creator-tee";
 		teeEl.textContent = String(hole.number);
 		markers.push(
-			new maplibregl.Marker({ element: teeEl })
+			new maplibre.Marker({ element: teeEl })
 				.setLngLat([hole.tee.lng, hole.tee.lat])
-				.addTo(map as maplibregl.Map),
+				.addTo(map as MapLibreMap),
 		);
 
 		const basketEl = document.createElement("div");
 		basketEl.className = "creator-marker creator-basket";
 		basketEl.textContent = "🎯";
 		markers.push(
-			new maplibregl.Marker({ element: basketEl })
+			new maplibre.Marker({ element: basketEl })
 				.setLngLat([hole.basket.lng, hole.basket.lat])
-				.addTo(map as maplibregl.Map),
+				.addTo(map as MapLibreMap),
 		);
 	});
 
@@ -149,16 +166,26 @@ const refreshMarkers = () => {
 		pendingEl.className = "creator-marker creator-tee pending";
 		pendingEl.textContent = String(holes.length + 1);
 		markers.push(
-			new maplibregl.Marker({ element: pendingEl })
+			new maplibre.Marker({ element: pendingEl })
 				.setLngLat([pendingTee.lng, pendingTee.lat])
-				.addTo(map as maplibregl.Map),
+				.addTo(map as MapLibreMap),
 		);
 	}
 };
 
-const initializeMap = (center: LatLng, zoom: number) => {
+const initializeMap = async (center: LatLng, zoom: number) => {
 	if (map || !mapContainer) return;
-	map = new maplibregl.Map({
+	let loadedMapLibre: MapLibreModule;
+	try {
+		loadedMapLibre = await loadMapLibre();
+	} catch (error) {
+		console.error("Failed to load map renderer:", error);
+		statusMessage =
+			"Map rendering failed to load. Check your connection and reload the page.";
+		return;
+	}
+	if (map || !mapContainer) return;
+	map = new loadedMapLibre.Map({
 		container: mapContainer,
 		style: "https://tiles.openfreemap.org/styles/liberty",
 		center: [center.lng, center.lat],
@@ -171,7 +198,7 @@ const initializeMap = (center: LatLng, zoom: number) => {
 		placePoint({ lat: e.lngLat.lat, lng: e.lngLat.lng });
 	});
 	map.addControl(
-		new maplibregl.GeolocateControl({
+		new loadedMapLibre.GeolocateControl({
 			positionOptions: { enableHighAccuracy: true },
 			trackUserLocation: true,
 		}),
@@ -184,17 +211,17 @@ onMount(() => {
 		// No GPS: still usable — pan the world map and tap to place points
 		statusMessage =
 			"GPS is not available in this browser. Place points by tapping the map.";
-		initializeMap({ lat: 20, lng: 0 }, 2);
+		void initializeMap({ lat: 20, lng: 0 }, 2);
 		return;
 	}
 	navigator.geolocation.getCurrentPosition(
 		(pos) => {
 			position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-			initializeMap(position, 17);
+			void initializeMap(position, 17);
 		},
 		(error) => {
 			statusMessage = getLocationStatusMessage(error);
-			initializeMap({ lat: 20, lng: 0 }, 2);
+			void initializeMap({ lat: 20, lng: 0 }, 2);
 		},
 		{ enableHighAccuracy: true, timeout: 10000 },
 	);
@@ -203,7 +230,7 @@ onMount(() => {
 			position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 		},
 		(error) => {
-			statusMessage = getLocationStatusMessage(error);
+			console.warn("Position watch error:", error);
 		},
 		{ enableHighAccuracy: true },
 	);

@@ -1,65 +1,9 @@
-<script module>
-import "@ar-js-org/ar.js";
-
-// Register A-Frame components before scene initialization
-AFRAME.registerComponent("scene-listener", {
-	init: function () {
-		this.el.addEventListener("loaded", () => {
-			window.dispatchEvent(new CustomEvent("ar-camera-loaded"));
-		});
-
-		this.el.addEventListener("error", (event) => {
-			console.error("AR camera loading error:", event);
-			window.dispatchEvent(new CustomEvent("ar-camera-error"));
-		});
-	},
-});
-
-// A straight 3D arrow lying flat, pointing toward -Z (A-Frame "forward").
-// Its parent entity is rotated at runtime to aim at the basket.
-AFRAME.registerComponent("direction-arrow", {
-	schema: {
-		color: { type: "color", default: "#ff3b30" },
-	},
-	init: function () {
-		const material = new THREE.MeshStandardMaterial({ color: this.data.color });
-		const group = new THREE.Group();
-
-		const shaft = new THREE.Mesh(
-			new THREE.CylinderGeometry(0.04, 0.04, 1.2, 12),
-			material,
-		);
-		shaft.rotation.x = Math.PI / 2;
-		shaft.position.z = -0.6;
-		group.add(shaft);
-
-		const head = new THREE.Mesh(
-			new THREE.ConeGeometry(0.14, 0.4, 16),
-			material,
-		);
-		head.rotation.x = -Math.PI / 2;
-		head.position.z = -1.4;
-		group.add(head);
-
-		this.el.setObject3D("mesh", group);
-	},
-});
-</script>
-
 <script lang="ts">
-import maplibregl from "maplibre-gl";
-import { onDestroy, onMount } from "svelte";
 import type { FeatureCollection } from "geojson";
-import "maplibre-gl/dist/maplibre-gl.css";
+import { onDestroy, onMount } from "svelte";
+import ARScene from "./ARScene.svelte";
+import Scorecard from "./Scorecard.svelte";
 import { type ARMode, detectARMode } from "./ar.ts";
-import {
-	bearingDegrees,
-	circleRing,
-	distanceMeters,
-	formatDistance,
-	isWithinRadius,
-	relativeBearing,
-} from "./geo.ts";
 import {
 	completeHole,
 	formatScoreVsPar,
@@ -69,14 +13,26 @@ import {
 	undoThrow,
 } from "./gameState.ts";
 import {
+	bearingDegrees,
+	circleRing,
+	distanceMeters,
+	formatDistance,
+	isWithinRadius,
+	relativeBearing,
+} from "./geo.ts";
+import {
 	compassHeading,
 	needsOrientationPermission,
 	nextUprightState,
 	requestOrientationPermission,
 } from "./orientation.ts";
-import Scorecard from "./Scorecard.svelte";
 import type { GameSession, LatLng } from "./types.ts";
 import { acquireWakeLock } from "./wakeLock.ts";
+
+type MapLibreModule = typeof import("maplibre-gl");
+type MapLibreMap = import("maplibre-gl").Map;
+type MapLibreMarker = import("maplibre-gl").Marker;
+type MapLibreGeoJsonSource = import("maplibre-gl").GeoJSONSource;
 
 /** Arriving within this many meters of the basket counts as reaching it. */
 const BASKET_ARRIVAL_RADIUS_M = 10;
@@ -96,9 +52,11 @@ let session = $state(getInitialSession());
 let mapContainer: HTMLDivElement;
 let arrowAnchor: HTMLElement | null = $state(null);
 let arSceneEl: HTMLElement | null = $state(null);
-let map: maplibregl.Map | null = null;
-let userMarker: maplibregl.Marker | null = null;
-let holeMarkers: maplibregl.Marker[] = [];
+let maplibregl: MapLibreModule | null = null;
+let maplibreLoad: Promise<MapLibreModule> | null = null;
+let map: MapLibreMap | null = null;
+let userMarker: MapLibreMarker | null = null;
+let holeMarkers: MapLibreMarker[] = [];
 let watchId: number | null = null;
 let releaseWakeLock: (() => void) | null = null;
 let orientationEnabled = false;
@@ -110,6 +68,7 @@ let orientationHeading: number | null = $state(null);
 let gpsHeading: number | null = $state(null);
 let isDeviceUpright = $state(false);
 let arMode: ARMode | null = $state(null);
+let arSceneEnabled = $state(false);
 let cameraLoading = $state(true);
 let cameraError = $state(false);
 let locationError: string | null = $state(null);
@@ -122,7 +81,7 @@ let showScorecard = $state(false);
 const currentHole = $derived(session.course.holes[session.currentHoleIndex]);
 const roundComplete = $derived(session.completedAt !== null);
 const currentStrokes = $derived(session.strokes[session.currentHoleIndex]);
-const showAR = $derived(isDeviceUpright && !roundComplete && !showScorecard);
+const showAr = $derived(isDeviceUpright && !roundComplete && !showScorecard);
 const heading = $derived(orientationHeading ?? gpsHeading);
 const distanceToBasket = $derived(
 	position ? distanceMeters(position, currentHole.basket) : null,
@@ -137,6 +96,26 @@ const arrowRotation = $derived(
 		? relativeBearing(bearingDegrees(position, currentHole.basket), heading)
 		: null,
 );
+
+const loadMapLibre = async (): Promise<MapLibreModule> => {
+	if (maplibregl) return maplibregl;
+	maplibreLoad ??= Promise.all([
+		import("maplibre-gl"),
+		import("maplibre-gl/dist/maplibre-gl.css"),
+	]).then(([module]) => {
+		maplibregl = module;
+		return module;
+	});
+	return maplibreLoad;
+};
+
+const setArrowAnchor = (element: HTMLElement | null) => {
+	arrowAnchor = element;
+};
+
+const setArScene = (element: HTMLElement | null) => {
+	arSceneEl = element;
+};
 
 // ---------------------------------------------------------------- map layers
 
@@ -185,7 +164,7 @@ const accuracyGeoJson = (): FeatureCollection => ({
 });
 
 const setSourceData = (id: string, data: FeatureCollection) => {
-	const source = map?.getSource(id) as maplibregl.GeoJSONSource | undefined;
+	const source = map?.getSource(id) as MapLibreGeoJsonSource | undefined;
 	source?.setData(data);
 };
 
@@ -194,7 +173,8 @@ const buildHoleMarkers = () => {
 		marker.remove();
 	}
 	holeMarkers = [];
-	if (!map) return;
+	const maplibre = maplibregl;
+	if (!map || !maplibre) return;
 
 	session.course.holes.forEach((hole, i) => {
 		const isCurrent = i === session.currentHoleIndex;
@@ -204,9 +184,9 @@ const buildHoleMarkers = () => {
 		teeEl.textContent = String(hole.number);
 		teeEl.title = `Hole ${hole.number} tee`;
 		holeMarkers.push(
-			new maplibregl.Marker({ element: teeEl })
+			new maplibre.Marker({ element: teeEl })
 				.setLngLat([hole.tee.lng, hole.tee.lat])
-				.addTo(map as maplibregl.Map),
+				.addTo(map as MapLibreMap),
 		);
 
 		const basketEl = document.createElement("div");
@@ -214,17 +194,28 @@ const buildHoleMarkers = () => {
 		basketEl.textContent = "🎯";
 		basketEl.title = `Hole ${hole.number} basket`;
 		holeMarkers.push(
-			new maplibregl.Marker({ element: basketEl })
+			new maplibre.Marker({ element: basketEl })
 				.setLngLat([hole.basket.lng, hole.basket.lat])
-				.addTo(map as maplibregl.Map),
+				.addTo(map as MapLibreMap),
 		);
 	});
 };
 
-const initializeMap = (center: LatLng) => {
+const initializeMap = async (center: LatLng) => {
+	if (!mapContainer || map) return;
+	let loadedMapLibre: MapLibreModule;
+	try {
+		loadedMapLibre = await loadMapLibre();
+	} catch (error) {
+		console.error("Failed to load map renderer:", error);
+		isLoading = false;
+		mapIssue =
+			"Map rendering failed to load. Check your connection and reload the page.";
+		return;
+	}
 	if (!mapContainer || map) return;
 
-	map = new maplibregl.Map({
+	map = new loadedMapLibre.Map({
 		container: mapContainer,
 		style: "https://tiles.openfreemap.org/styles/liberty",
 		center: [center.lng, center.lat],
@@ -278,12 +269,12 @@ const initializeMap = (center: LatLng) => {
 			},
 		});
 
-		userMarker = new maplibregl.Marker({ color: "#4facfe", scale: 1.2 })
+		userMarker = new loadedMapLibre.Marker({ color: "#4facfe", scale: 1.2 })
 			.setLngLat([center.lng, center.lat])
 			.addTo(map);
 
 		map.addControl(
-			new maplibregl.GeolocateControl({
+			new loadedMapLibre.GeolocateControl({
 				positionOptions: { enableHighAccuracy: true },
 				trackUserLocation: true,
 			}),
@@ -314,12 +305,19 @@ const initializeMap = (center: LatLng) => {
 
 const fitToCurrentHole = () => {
 	if (!map) return;
-	const bounds = new maplibregl.LngLatBounds();
-	bounds.extend([currentHole.tee.lng, currentHole.tee.lat]);
-	bounds.extend([currentHole.basket.lng, currentHole.basket.lat]);
+	const coordinates: [number, number][] = [
+		[currentHole.tee.lng, currentHole.tee.lat],
+		[currentHole.basket.lng, currentHole.basket.lat],
+	];
 	if (position) {
-		bounds.extend([position.lng, position.lat]);
+		coordinates.push([position.lng, position.lat]);
 	}
+	const lngs = coordinates.map(([lng]) => lng);
+	const lats = coordinates.map(([, lat]) => lat);
+	const bounds: [[number, number], [number, number]] = [
+		[Math.min(...lngs), Math.min(...lats)],
+		[Math.max(...lngs), Math.max(...lats)],
+	];
 	map.fitBounds(bounds, { padding: 80, maxZoom: 18, duration: 800 });
 };
 
@@ -374,7 +372,7 @@ const startLocationTracking = () => {
 		(pos) => {
 			const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 			locationError = null;
-			initializeMap(point);
+			void initializeMap(point);
 			updateUserPosition(point, pos.coords.accuracy);
 		},
 		(error) => {
@@ -391,7 +389,7 @@ const startLocationTracking = () => {
 			const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
 			if (!map) {
 				locationError = null;
-				initializeMap(point);
+				void initializeMap(point);
 			}
 			updateUserPosition(point, pos.coords.accuracy);
 			if (pos.coords.heading !== null && !Number.isNaN(pos.coords.heading)) {
@@ -417,7 +415,7 @@ const enterDemoMode = () => {
 	demoMode = true;
 	locationError = null;
 	isLoading = false;
-	initializeMap(currentHole.tee);
+	void initializeMap(currentHole.tee);
 	updateUserPosition(currentHole.tee, 5);
 };
 
@@ -465,18 +463,25 @@ const finishHole = () => {
 	}
 };
 
-const enterAR = () => {
-	interface ARCapableScene extends HTMLElement {
+const enterAr = () => {
+	interface ArCapableScene extends HTMLElement {
 		enterAR?: () => void;
 	}
-	(arSceneEl as ARCapableScene | null)?.enterAR?.();
+	(arSceneEl as ArCapableScene | null)?.enterAR?.();
 };
 
 // ----------------------------------------------------------------- effects
 
 // AR.js appends its <video> to <body>; drive its visibility from game state
 $effect(() => {
-	document.body.classList.toggle("ar-video-visible", showAR);
+	document.body.classList.toggle("ar-video-visible", showAr);
+});
+
+// Keep AR.js/A-Frame out of the game chunk until the AR surface is needed.
+$effect(() => {
+	if ((showAr || arMode === "webxr") && !arSceneEnabled) {
+		arSceneEnabled = true;
+	}
 });
 
 // Aim the AR arrow at the basket as heading/position change
@@ -497,7 +502,7 @@ $effect(() => {
 // The AR.js camera can fail to emit load events; stop showing the spinner
 // after a grace period whenever the AR view becomes active.
 $effect(() => {
-	if (!(showAR && arMode === "arjs" && cameraLoading)) return;
+	if (!(showAr && arMode === "arjs" && cameraLoading)) return;
 	const timer = setTimeout(() => {
 		cameraLoading = false;
 	}, 3000);
@@ -574,7 +579,7 @@ onDestroy(() => {
 		</div>
 	{/if}
 
-	<div class="map-container" class:ar-active={showAR}>
+	<div class="map-container" class:ar-active={showAr}>
 		{#if isLoading}
 			<div class="loading-overlay">
 				<div class="spinner"></div>
@@ -592,29 +597,13 @@ onDestroy(() => {
 			{#if arMode === "webxr"}
 				<div class="webxr-prompt">
 					<p>WebXR is supported on this device</p>
-					<button class="primary-btn" onclick={enterAR}>Enter AR</button>
+					<button class="primary-btn" onclick={enterAr} disabled={!arSceneEl}>
+						{arSceneEl ? "Enter AR" : "Loading AR..."}
+					</button>
 				</div>
 			{/if}
-			{#if arMode !== null}
-				<a-scene
-					bind:this={arSceneEl}
-					vr-mode-ui="enabled: false"
-					arjs={arMode === "arjs"
-						? "sourceType: webcam; facingMode: environment; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
-						: undefined}
-					webxr={arMode === "webxr"
-						? "optionalFeatures: local-floor, hit-test"
-						: undefined}
-					renderer="logarithmicDepthBuffer: true;"
-					embedded
-					loading-screen="enabled: false"
-					scene-listener
-				>
-					<a-entity bind:this={arrowAnchor} position="0 -0.4 -1.5">
-						<a-entity direction-arrow></a-entity>
-					</a-entity>
-					<a-entity camera="active: true; fov: 80"></a-entity>
-				</a-scene>
+			{#if arMode !== null && arSceneEnabled}
+				<ARScene {arMode} onArrowAnchor={setArrowAnchor} onScene={setArScene} />
 			{/if}
 			<div class="ar-hud">
 				{#if distanceToBasket !== null}
