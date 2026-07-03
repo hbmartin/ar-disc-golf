@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
+		"analyze": "vite build --mode analyze && node scripts/bundle-report.mjs",
 		"preview": "vite preview",
 		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
 		"lint": "biome ci src --diagnostic-level=error && prettier -c src",
@@ -30,9 +31,14 @@
 		"vitest": "^3.2.2"
 	},
 	"dependencies": {
-		"@ar-js-org/ar.js": "^3.4.7",
-		"aframe": "^1.7.1",
-		"maplibre-gl": "^5.6.0",
-		"svelte-spa-router": "^4.0.1"
+		"@ar-js-org/ar.js": "3.4.7",
+		"aframe": "1.7.1",
+		"maplibre-gl": "5.6.0",
+		"svelte-spa-router": "4.0.1"
+	},
+	"overrides": {
+		"aframe": "1.7.1",
+		"gl-matrix": "3.4.3",
+		"three-bmfont-text": "3.0.1"
 	}
 }

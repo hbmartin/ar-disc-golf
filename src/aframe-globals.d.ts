@@ -3,6 +3,8 @@
  * `@ar-js-org/ar.js` bundle — only the surface this app actually uses.
  */
 
+declare module "@ar-js-org/ar.js";
+
 interface ThreeObject3D {
 	add(child: ThreeObject3D): void;
 	rotation: { x: number; y: number; z: number };

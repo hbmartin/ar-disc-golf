@@ -119,11 +119,22 @@ export function totalPar(course: Course): number {
 	return course.holes.reduce((sum, hole) => sum + hole.par, 0);
 }
 
-export function playedPar(session: GameSession): number {
-	return session.course.holes.reduce(
-		(sum, hole, index) => sum + (session.strokes[index] > 0 ? hole.par : 0),
-		0,
-	);
+function completedHoleLimit(session: GameSession): number {
+	return session.completedAt !== null
+		? session.course.holes.length
+		: session.currentHoleIndex;
+}
+
+export function completedStrokes(session: GameSession): number {
+	return session.strokes
+		.slice(0, completedHoleLimit(session))
+		.reduce((sum, s) => sum + s, 0);
+}
+
+export function completedPar(session: GameSession): number {
+	return session.course.holes
+		.slice(0, completedHoleLimit(session))
+		.reduce((sum, hole) => sum + hole.par, 0);
 }
 
 /** Score relative to par formatted like a leaderboard: "E", "+2", "-1". */

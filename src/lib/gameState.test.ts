@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	clearCurrentGame,
 	completeHole,
+	completedPar,
+	completedStrokes,
 	createGame,
 	formatScoreVsPar,
 	getCurrentGameId,
 	listRoundHistory,
 	loadGame,
-	playedPar,
 	recordThrow,
 	totalPar,
 	totalStrokes,
@@ -163,12 +164,33 @@ describe("completeHole", () => {
 });
 
 describe("score helpers", () => {
-	it("sums par and strokes", () => {
+	it("sums full-round par and strokes", () => {
 		expect(totalPar(course)).toBe(7);
 		let session = createGame(course);
 		session = recordThrow(session);
 		expect(totalStrokes(session)).toBe(1);
-		expect(playedPar(session)).toBe(3);
+	});
+
+	it("sums only completed holes during active rounds", () => {
+		let session = createGame(course);
+
+		session = recordThrow(session);
+		expect(completedStrokes(session)).toBe(0);
+		expect(completedPar(session)).toBe(0);
+
+		session = completeHole(session);
+		expect(completedStrokes(session)).toBe(1);
+		expect(completedPar(session)).toBe(3);
+
+		session = recordThrow(session);
+		session = recordThrow(session);
+		expect(totalStrokes(session)).toBe(3);
+		expect(completedStrokes(session)).toBe(1);
+		expect(completedPar(session)).toBe(3);
+
+		session = completeHole(session);
+		expect(completedStrokes(session)).toBe(3);
+		expect(completedPar(session)).toBe(7);
 	});
 
 	it("formats score vs par like a leaderboard", () => {
