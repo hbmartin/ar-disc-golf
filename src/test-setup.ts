@@ -79,4 +79,6 @@ Object.defineProperty(globalThis.navigator, "geolocation", {
 beforeEach(() => {
 	// Reset mocks before each test
 	vi.clearAllMocks();
+	localStorageMock.clear();
+	sessionStorageMock.clear();
 });

@@ -33,10 +33,15 @@ const loadMapLibre = async (): Promise<MapLibreModule> => {
 	maplibreLoad ??= Promise.all([
 		import("maplibre-gl"),
 		import("maplibre-gl/dist/maplibre-gl.css"),
-	]).then(([module]) => {
-		maplibregl = module;
-		return module;
-	});
+	])
+		.then(([module]) => {
+			maplibregl = module;
+			return module;
+		})
+		.catch((error) => {
+			maplibreLoad = null;
+			throw error;
+		});
 	return maplibreLoad;
 };
 

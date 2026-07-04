@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	clearCurrentGame,
 	completeHole,
@@ -34,10 +34,6 @@ const course: Course = {
 		},
 	],
 };
-
-beforeEach(() => {
-	localStorage.clear();
-});
 
 describe("createGame / loadGame", () => {
 	it("creates a persisted session with zeroed scores", () => {

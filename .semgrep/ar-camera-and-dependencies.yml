@@ -1,0 +1,46 @@
+rules:
+  - id: arjs-import-outside-ar-scene
+    message: Keep AR.js and A-Frame loading centralized in ARScene so camera lifecycle cleanup stays in one place.
+    severity: ERROR
+    languages:
+      - generic
+    paths:
+      include:
+        - /src/**/*.svelte
+        - /src/**/*.ts
+      exclude:
+        - /src/lib/ARScene.svelte
+    pattern-either:
+      - pattern: import("@ar-js-org/ar.js")
+      - pattern: import("aframe")
+      - pattern: from "aframe"
+
+  - id: ar-scene-import-without-camera-cleanup
+    message: ARScene imports AR.js but does not call stopArJsCamera for media-track cleanup.
+    severity: ERROR
+    languages:
+      - generic
+    paths:
+      include:
+        - /src/lib/ARScene.svelte
+    pattern-regex: 'import\("@ar-js-org/ar\.js"\)(?![\s\S]*stopArJsCamera\(\))'
+
+  - id: unsafe-three-bmfont-text-override
+    message: Do not replace A-Frame's dmarcos three-bmfont-text fork with an arbitrary npm override.
+    severity: WARNING
+    languages:
+      - generic
+    paths:
+      include:
+        - /package.json
+    pattern-regex: '"three-bmfont-text"\s*:\s*"(?!github:dmarcos/three-bmfont-text#)[^"]+"'
+
+  - id: unexpected-pnpm-git-hosted-dependency
+    message: pnpm git-hosted dependencies should be explicitly reviewed and documented.
+    severity: WARNING
+    languages:
+      - generic
+    paths:
+      include:
+        - /pnpm-lock.yaml
+    pattern-regex: 'gitHosted: true, tarball: (?!https://codeload\.github\.com/dmarcos/three-bmfont-text/tar\.gz/eed4878795be9b3e38cf6aec6b903f56acd1f695)'

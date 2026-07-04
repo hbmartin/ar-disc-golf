@@ -1,7 +1,8 @@
 overrides:
   aframe: 1.7.1
   gl-matrix: 3.4.3
-  three-bmfont-text: 3.0.1
+
+blockExoticSubdeps: false
 
 onlyBuiltDependencies:
   - '@biomejs/biome'

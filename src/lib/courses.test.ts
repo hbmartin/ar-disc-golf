@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	BUILT_IN_COURSES,
 	createDemoCourse,
@@ -25,10 +25,6 @@ const sampleCourse: Course = {
 		},
 	],
 };
-
-beforeEach(() => {
-	localStorage.clear();
-});
 
 describe("BUILT_IN_COURSES", () => {
 	it("are all valid courses with plausible hole lengths", () => {
