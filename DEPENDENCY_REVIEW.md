@@ -22,3 +22,27 @@ Workbox's declared ranges risks breaking service-worker generation while leaving
 the upstream package constraints undocumented. Revisit this when Workbox or
 `vite-plugin-pwa` publishes a version that removes these transitive alerts, or
 replace the PWA generation stack with a manually maintained service worker.
+
+## A-Frame / three-bmfont-text transitive GitHub dependency
+
+Socket flagged `aframe@1.7.1` because it depends on the dmarcos
+`three-bmfont-text` GitHub fork. Checked on 2026-07-04:
+
+- `aframe@1.7.1` depends on
+  `github:dmarcos/three-bmfont-text#eed4878795be9b3e38cf6aec6b903f56acd1f695`.
+- `aframe@1.8.0`, the current npm registry version, still depends on the same
+  dmarcos fork at a newer commit.
+- `@ar-js-org/ar.js@3.4.7` declares `aframe` support through `^1.6.0`.
+- Forcing `three-bmfont-text@3.0.1` from npm replaces the dmarcos fork with
+  the Jam3 upstream package and makes the installed dependency graph invalid.
+
+No npm override is applied for `three-bmfont-text`. Keeping A-Frame's declared
+fork is lower risk than replacing it with a different package that may be
+missing A-Frame-specific patches. The fork is listed as a direct dependency so
+the trust decision is explicit in `package.json`. `pnpm-workspace.yaml` sets
+`blockExoticSubdeps: false` because pnpm 11 otherwise rejects A-Frame's own
+declared dependency before the lockfile can be generated.
+
+Revisit this when A-Frame publishes a release that removes the GitHub
+dependency, or when the fork is published to an npm package that can be consumed
+without changing the implementation.

@@ -35,24 +35,31 @@ const registerAFrameComponents = () => {
 				color: this.data.color,
 			});
 			const group = new THREE.Group();
+			const shaftGeometry = new THREE.CylinderGeometry(0.04, 0.04, 1.2, 12);
+			const headGeometry = new THREE.ConeGeometry(0.14, 0.4, 16);
 
-			const shaft = new THREE.Mesh(
-				new THREE.CylinderGeometry(0.04, 0.04, 1.2, 12),
-				material,
-			);
+			const shaft = new THREE.Mesh(shaftGeometry, material);
 			shaft.rotation.x = Math.PI / 2;
 			shaft.position.z = -0.6;
 			group.add(shaft);
 
-			const head = new THREE.Mesh(
-				new THREE.ConeGeometry(0.14, 0.4, 16),
-				material,
-			);
+			const head = new THREE.Mesh(headGeometry, material);
 			head.rotation.x = -Math.PI / 2;
 			head.position.z = -1.4;
 			group.add(head);
 
+			this.geometries = [shaftGeometry, headGeometry];
+			this.material = material;
 			this.el.setObject3D("mesh", group);
+		},
+		remove: function () {
+			for (const geometry of this.geometries ?? []) {
+				geometry.dispose();
+			}
+			this.material?.dispose();
+			this.el.removeObject3D("mesh");
+			this.geometries = undefined;
+			this.material = undefined;
 		},
 	});
 };
@@ -61,6 +68,7 @@ const registerAFrameComponents = () => {
 <script lang="ts">
 import { onMount } from "svelte";
 import type { ARMode } from "./ar.ts";
+import { stopArJsCamera } from "./arCamera.ts";
 
 const {
 	arMode,
@@ -93,6 +101,7 @@ onMount(() => {
 
 	return () => {
 		cancelled = true;
+		stopArJsCamera();
 	};
 });
 

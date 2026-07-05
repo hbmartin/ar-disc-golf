@@ -4,6 +4,7 @@ import { onDestroy, onMount } from "svelte";
 import ARScene from "./ARScene.svelte";
 import Scorecard from "./Scorecard.svelte";
 import { type ARMode, detectARMode } from "./ar.ts";
+import { stopArJsCamera } from "./arCamera.ts";
 import {
 	completeHole,
 	formatScoreVsPar,
@@ -68,7 +69,6 @@ let orientationHeading: number | null = $state(null);
 let gpsHeading: number | null = $state(null);
 let isDeviceUpright = $state(false);
 let arMode: ARMode | null = $state(null);
-let arSceneEnabled = $state(false);
 let cameraLoading = $state(true);
 let cameraError = $state(false);
 let locationError: string | null = $state(null);
@@ -102,10 +102,15 @@ const loadMapLibre = async (): Promise<MapLibreModule> => {
 	maplibreLoad ??= Promise.all([
 		import("maplibre-gl"),
 		import("maplibre-gl/dist/maplibre-gl.css"),
-	]).then(([module]) => {
-		maplibregl = module;
-		return module;
-	});
+	])
+		.then(([module]) => {
+			maplibregl = module;
+			return module;
+		})
+		.catch((error) => {
+			maplibreLoad = null;
+			throw error;
+		});
 	return maplibreLoad;
 };
 
@@ -477,13 +482,6 @@ $effect(() => {
 	document.body.classList.toggle("ar-video-visible", showAr);
 });
 
-// Keep AR.js/A-Frame out of the game chunk until the AR surface is needed.
-$effect(() => {
-	if ((showAr || arMode === "webxr") && !arSceneEnabled) {
-		arSceneEnabled = true;
-	}
-});
-
 // Aim the AR arrow at the basket as heading/position change
 $effect(() => {
 	if (arrowAnchor && arrowRotation !== null) {
@@ -548,8 +546,7 @@ onDestroy(() => {
 	clearLocationWatch();
 	map?.remove();
 	releaseWakeLock?.();
-	document.getElementById("arjs-video")?.remove();
-	document.body.classList.remove("ar-video-visible");
+	stopArJsCamera();
 	document.body.style.overflow = "";
 });
 </script>
@@ -602,7 +599,7 @@ onDestroy(() => {
 					</button>
 				</div>
 			{/if}
-			{#if arMode !== null && arSceneEnabled}
+			{#if arMode !== null && (showAr || arMode === "webxr")}
 				<ARScene {arMode} onArrowAnchor={setArrowAnchor} onScene={setArScene} />
 			{/if}
 			<div class="ar-hud">

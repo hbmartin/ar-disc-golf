@@ -5,6 +5,10 @@
 
 declare module "@ar-js-org/ar.js";
 
+interface DisposableThreeResource {
+	dispose(): void;
+}
+
 interface ThreeObject3D {
 	add(child: ThreeObject3D): void;
 	rotation: { x: number; y: number; z: number };
@@ -14,29 +18,34 @@ interface ThreeObject3D {
 interface ThreeGlobal {
 	Group: new () => ThreeObject3D;
 	Mesh: new (geometry: unknown, material: unknown) => ThreeObject3D;
-	MeshStandardMaterial: new (parameters: { color: string }) => unknown;
+	MeshStandardMaterial: new (parameters: {
+		color: string;
+	}) => DisposableThreeResource;
 	CylinderGeometry: new (
 		radiusTop: number,
 		radiusBottom: number,
 		height: number,
 		radialSegments: number,
-	) => unknown;
+	) => DisposableThreeResource;
 	ConeGeometry: new (
 		radius: number,
 		height: number,
 		radialSegments: number,
-	) => unknown;
+	) => DisposableThreeResource;
 }
 
 declare const THREE: ThreeGlobal;
 
 interface AFrameEntity extends HTMLElement {
 	setObject3D(name: string, object: ThreeObject3D): void;
+	removeObject3D(name: string): void;
 }
 
 interface AFrameComponentThis {
 	el: AFrameEntity;
 	data: { color: string };
+	geometries?: DisposableThreeResource[];
+	material?: DisposableThreeResource;
 }
 
 interface AFrameGlobal {
@@ -45,6 +54,7 @@ interface AFrameGlobal {
 		definition: {
 			schema?: Record<string, unknown>;
 			init?: (this: AFrameComponentThis) => void;
+			remove?: (this: AFrameComponentThis) => void;
 		},
 	): void;
 }
