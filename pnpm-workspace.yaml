@@ -4,7 +4,11 @@ overrides:
   gl-matrix: 3.4.3
   got: 11.8.6
 
-blockExoticSubdeps: false
+# Exotic (git/tarball) subdeps stay blocked for fresh resolutions; entries
+# already in the committed lockfile (A-Frame's reviewed three-bmfont-text
+# fork) pass. Regenerating the lockfile after an aframe bump needs a
+# temporary flip to false — see DEPENDENCY_REVIEW.md.
+blockExoticSubdeps: true
 
 onlyBuiltDependencies:
   - '@biomejs/biome'

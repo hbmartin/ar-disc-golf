@@ -10,10 +10,9 @@ rules:
         - /src/**/*.ts
       exclude:
         - /src/lib/ARScene.svelte
-    pattern-either:
-      - pattern: import("@ar-js-org/ar.js")
-      - pattern: import("aframe")
-      - pattern: from "aframe"
+    # Covers dynamic import(), static/side-effect import, from-clauses, and
+    # require(), with either quote style and package subpaths.
+    pattern-regex: '(?:import\s*\(\s*|from\s+|import\s+|require\s*\(\s*)["''](?:@ar-js-org/ar\.js|aframe)(?:/[^"'']*)?["'']'
 
   - id: ar-scene-import-without-camera-cleanup
     message: ARScene imports AR.js but does not call stopArJsCamera for media-track cleanup.
@@ -23,7 +22,7 @@ rules:
     paths:
       include:
         - /src/lib/ARScene.svelte
-    pattern-regex: 'import\("@ar-js-org/ar\.js"\)(?![\s\S]*stopArJsCamera\(\))'
+    pattern-regex: 'import\s*\(\s*["'']@ar-js-org/ar\.js["'']\s*\)(?![\s\S]*stopArJsCamera\(\))'
 
   - id: unsafe-three-bmfont-text-override
     message: Do not replace A-Frame's dmarcos three-bmfont-text fork with an arbitrary npm override.
@@ -35,12 +34,28 @@ rules:
         - /package.json
     pattern-regex: '"three-bmfont-text"\s*:\s*"(?!github:dmarcos/three-bmfont-text#)[^"]+"'
 
+  # Any git/tarball-hosted dependency outside the reviewed dmarcos
+  # three-bmfont-text fork (any commit) needs an explicit review — see
+  # DEPENDENCY_REVIEW.md. Keyed on the tarball URL rather than field order so
+  # entries with a leading integrity field are still caught.
   - id: unexpected-pnpm-git-hosted-dependency
-    message: pnpm git-hosted dependencies should be explicitly reviewed and documented.
+    message: pnpm git-hosted dependencies should be explicitly reviewed and documented in DEPENDENCY_REVIEW.md.
     severity: WARNING
     languages:
       - generic
     paths:
       include:
         - /pnpm-lock.yaml
-    pattern-regex: 'gitHosted: true, tarball: (?!https://codeload\.github\.com/dmarcos/three-bmfont-text/tar\.gz/eed4878795be9b3e38cf6aec6b903f56acd1f695)'
+    pattern-regex: 'tarball: (?!https://codeload\.github\.com/dmarcos/three-bmfont-text/tar\.gz/)'
+
+  # The toolchain is pnpm-only, but if an npm lockfile is ever regenerated it
+  # must not introduce unreviewed git-hosted dependencies either.
+  - id: unexpected-npm-git-hosted-dependency
+    message: npm git-hosted dependencies should be explicitly reviewed and documented in DEPENDENCY_REVIEW.md.
+    severity: WARNING
+    languages:
+      - generic
+    paths:
+      include:
+        - /package-lock.json
+    pattern-regex: '"resolved": "git\+(?!(?:ssh://git@|https://)github\.com/dmarcos/three-bmfont-text)'
