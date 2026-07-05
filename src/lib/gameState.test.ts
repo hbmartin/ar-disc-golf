@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	clearCurrentGame,
-	completeHole,
 	completedPar,
 	completedStrokes,
+	completeHole,
 	createGame,
 	formatScoreVsPar,
 	getCurrentGameId,

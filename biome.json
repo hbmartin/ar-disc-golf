@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -12,13 +12,11 @@
 	"formatter": {
 		"enabled": true
 	},
-	"organizeImports": {
-		"enabled": true
-	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"all": true,
+			"recommended": true,
 			"complexity": {
 				"noForEach": "off"
 			},
@@ -26,8 +24,7 @@
 				"useImportExtensions": "off"
 			},
 			"suspicious": {
-				"noConsole": "off",
-				"noConsoleLog": "off"
+				"noConsole": "off"
 			},
 			"style": {
 				"noDefaultExport": "off",
@@ -43,7 +40,7 @@
 	},
 	"overrides": [
 		{
-			"include": ["*.svelte", "*.astro", "*.vue"],
+			"includes": ["**/*.svelte", "**/*.astro", "**/*.vue"],
 			"linter": {
 				"rules": {
 					"style": {
@@ -59,7 +56,7 @@
 			}
 		},
 		{
-			"include": ["*test*.ts"],
+			"includes": ["**/*test*.ts"],
 			"linter": {
 				"rules": {
 					"correctness": {
@@ -79,7 +76,7 @@
 			}
 		},
 		{
-			"include": ["main.ts"],
+			"includes": ["**/main.ts"],
 			"linter": {
 				"rules": {
 					"style": {

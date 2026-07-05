@@ -21,13 +21,13 @@ A mobile web app for playing disc golf with GPS course maps, live scorekeeping, 
 ## Development
 
 ```bash
-npm install
-npm run dev       # dev server
-npm run build     # production build
-npm run preview   # preview the production build
-npm run test      # vitest unit tests
-npm run lint      # biome + prettier
-npm run check     # svelte-check + tsc
+pnpm install
+pnpm run dev       # dev server
+pnpm run build     # production build
+pnpm run preview   # preview the production build
+pnpm run test      # vitest unit tests
+pnpm run lint      # biome + prettier
+pnpm run check     # svelte-check + tsc
 ```
 
 CI runs lint, typecheck, tests, and a build on every pull request and on pushes to `main` (`.github/workflows/lint.yml`). Pushes to `main` also deploy to Cloudflare Pages (`.github/workflows/deploy.yml`).

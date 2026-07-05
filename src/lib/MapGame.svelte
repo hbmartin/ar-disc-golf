@@ -2,7 +2,6 @@
 import type { FeatureCollection } from "geojson";
 import { onDestroy, onMount } from "svelte";
 import ARScene from "./ARScene.svelte";
-import Scorecard from "./Scorecard.svelte";
 import { type ARMode, detectARMode } from "./ar.ts";
 import { stopArJsCamera } from "./arCamera.ts";
 import {
@@ -27,6 +26,7 @@ import {
 	nextUprightState,
 	requestOrientationPermission,
 } from "./orientation.ts";
+import Scorecard from "./Scorecard.svelte";
 import type { GameSession, LatLng } from "./types.ts";
 import { acquireWakeLock } from "./wakeLock.ts";
 
