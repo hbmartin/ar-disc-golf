@@ -1,6 +1,8 @@
 overrides:
-  aframe: 1.7.1
+  aframe: 1.8.0
+  axios: 1.18.1
   gl-matrix: 3.4.3
+  got: 11.8.6
 
 blockExoticSubdeps: false
 

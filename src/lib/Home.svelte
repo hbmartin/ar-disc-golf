@@ -1,10 +1,9 @@
 <script lang="ts">
 import { push } from "svelte-spa-router";
-import LocationService from "./LocationService.svelte";
 import {
 	BUILT_IN_COURSES,
-	DEMO_COURSE_ID,
 	createDemoCourse,
+	DEMO_COURSE_ID,
 	decodeCourseShare,
 	deleteCustomCourse,
 	listCustomCourses,
@@ -18,6 +17,7 @@ import {
 	loadGame,
 } from "./gameState.ts";
 import { distanceMeters, formatDistance } from "./geo.ts";
+import LocationService from "./LocationService.svelte";
 import { requestOrientationPermission } from "./orientation.ts";
 import type { Course } from "./types.ts";
 
