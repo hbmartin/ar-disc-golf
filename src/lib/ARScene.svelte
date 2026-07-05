@@ -68,7 +68,7 @@ const registerAFrameComponents = () => {
 <script lang="ts">
 import { onMount } from "svelte";
 import type { ARMode } from "./ar.ts";
-import { stopArJsCamera } from "./arCamera.ts";
+import { disarmArJsCameraWatch, stopArJsCamera } from "./arCamera.ts";
 
 const {
 	arMode,
@@ -86,6 +86,9 @@ let sceneEl: HTMLElement | null = $state(null);
 
 onMount(() => {
 	let cancelled = false;
+
+	// A watch armed by a previous teardown must not kill this scene's stream.
+	disarmArJsCameraWatch();
 
 	import("@ar-js-org/ar.js")
 		.then(() => {

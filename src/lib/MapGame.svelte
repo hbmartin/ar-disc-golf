@@ -21,6 +21,14 @@ import {
 	relativeBearing,
 } from "./geo.ts";
 import {
+	getMapLibre,
+	loadMapLibre,
+	type MapLibreGeoJsonSource,
+	type MapLibreMap,
+	type MapLibreMarker,
+	type MapLibreModule,
+} from "./mapLibre.ts";
+import {
 	compassHeading,
 	needsOrientationPermission,
 	nextUprightState,
@@ -29,11 +37,6 @@ import {
 import Scorecard from "./Scorecard.svelte";
 import type { GameSession, LatLng } from "./types.ts";
 import { acquireWakeLock } from "./wakeLock.ts";
-
-type MapLibreModule = typeof import("maplibre-gl");
-type MapLibreMap = import("maplibre-gl").Map;
-type MapLibreMarker = import("maplibre-gl").Marker;
-type MapLibreGeoJsonSource = import("maplibre-gl").GeoJSONSource;
 
 /** Arriving within this many meters of the basket counts as reaching it. */
 const BASKET_ARRIVAL_RADIUS_M = 10;
@@ -53,8 +56,6 @@ let session = $state(getInitialSession());
 let mapContainer: HTMLDivElement;
 let arrowAnchor: HTMLElement | null = $state(null);
 let arSceneEl: HTMLElement | null = $state(null);
-let maplibregl: MapLibreModule | null = null;
-let maplibreLoad: Promise<MapLibreModule> | null = null;
 let map: MapLibreMap | null = null;
 let userMarker: MapLibreMarker | null = null;
 let holeMarkers: MapLibreMarker[] = [];
@@ -69,6 +70,7 @@ let orientationHeading: number | null = $state(null);
 let gpsHeading: number | null = $state(null);
 let isDeviceUpright = $state(false);
 let arMode: ARMode | null = $state(null);
+let arSceneEnabled = $state(false);
 let cameraLoading = $state(true);
 let cameraError = $state(false);
 let locationError: string | null = $state(null);
@@ -96,23 +98,6 @@ const arrowRotation = $derived(
 		? relativeBearing(bearingDegrees(position, currentHole.basket), heading)
 		: null,
 );
-
-const loadMapLibre = async (): Promise<MapLibreModule> => {
-	if (maplibregl) return maplibregl;
-	maplibreLoad ??= Promise.all([
-		import("maplibre-gl"),
-		import("maplibre-gl/dist/maplibre-gl.css"),
-	])
-		.then(([module]) => {
-			maplibregl = module;
-			return module;
-		})
-		.catch((error) => {
-			maplibreLoad = null;
-			throw error;
-		});
-	return maplibreLoad;
-};
 
 const setArrowAnchor = (element: HTMLElement | null) => {
 	arrowAnchor = element;
@@ -178,7 +163,7 @@ const buildHoleMarkers = () => {
 		marker.remove();
 	}
 	holeMarkers = [];
-	const maplibre = maplibregl;
+	const maplibre = getMapLibre();
 	if (!map || !maplibre) return;
 
 	session.course.holes.forEach((hole, i) => {
@@ -482,6 +467,16 @@ $effect(() => {
 	document.body.classList.toggle("ar-video-visible", showAr);
 });
 
+// Keep AR.js/A-Frame out of the game chunk until the AR surface is needed,
+// then keep the scene mounted for the rest of the round: showAr flips on
+// every device tilt, and unmounting would tear down the camera stream and
+// force a slow AR.js re-init + getUserMedia on each raise of the phone.
+$effect(() => {
+	if ((showAr || arMode === "webxr") && !arSceneEnabled) {
+		arSceneEnabled = true;
+	}
+});
+
 // Aim the AR arrow at the basket as heading/position change
 $effect(() => {
 	if (arrowAnchor && arrowRotation !== null) {
@@ -546,6 +541,8 @@ onDestroy(() => {
 	clearLocationWatch();
 	map?.remove();
 	releaseWakeLock?.();
+	// Load-bearing even though ARScene cleans up after itself: a stream that
+	// AR.js attaches after ARScene already unmounted is only caught here.
 	stopArJsCamera();
 	document.body.style.overflow = "";
 });
@@ -599,7 +596,7 @@ onDestroy(() => {
 					</button>
 				</div>
 			{/if}
-			{#if arMode !== null && (showAr || arMode === "webxr")}
+			{#if arMode !== null && arSceneEnabled}
 				<ARScene {arMode} onArrowAnchor={setArrowAnchor} onScene={setArScene} />
 			{/if}
 			<div class="ar-hud">

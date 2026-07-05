@@ -39,9 +39,24 @@ Socket flagged `aframe@1.7.1` because it depends on the dmarcos
 No npm override is applied for `three-bmfont-text`. Keeping A-Frame's declared
 fork is lower risk than replacing it with a different package that may be
 missing A-Frame-specific patches. The fork is listed as a direct dependency so
-the trust decision is explicit in `package.json`. `pnpm-workspace.yaml` sets
-`blockExoticSubdeps: false` because pnpm 11 otherwise rejects A-Frame's own
-declared dependency before the lockfile can be generated.
+the trust decision is explicit in `package.json`.
+
+### blockExoticSubdeps
+
+`pnpm-workspace.yaml` sets `blockExoticSubdeps: true`. pnpm 11 skips the
+exotic-subdependency check for resolutions that already come from the committed
+lockfile, so day-to-day `pnpm install` / `pnpm install --frozen-lockfile` pass
+while any *new* git/tarball-hosted transitive dependency is rejected at install
+time. The setting is boolean-only (no per-package allowlist), which means:
+
+- Bumping `aframe` (or anything else that re-resolves the fork at a new commit)
+  fails with `ERR_PNPM_EXOTIC_SUBDEP`. Temporarily set `blockExoticSubdeps:
+  false`, regenerate the lockfile, review the new git-hosted entries, and flip
+  it back to `true`. Treat that flip as the review checkpoint.
+- The semgrep rules in `.semgrep/ar-camera-and-dependencies.yml` (run in the
+  lint workflow) independently flag any lockfile entry whose tarball is not the
+  dmarcos `three-bmfont-text` fork, catching entries that enter via the
+  lockfile-skip path.
 
 Revisit this when A-Frame publishes a release that removes the GitHub
 dependency, or when the fork is published to an npm package that can be consumed

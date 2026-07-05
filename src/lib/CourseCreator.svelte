@@ -3,16 +3,17 @@ import { onDestroy, onMount } from "svelte";
 import { push } from "svelte-spa-router";
 import { encodeCourseShare, saveCustomCourse } from "./courses.ts";
 import { distanceMeters, formatDistance } from "./geo.ts";
+import {
+	getMapLibre,
+	loadMapLibre,
+	type MapLibreMap,
+	type MapLibreMarker,
+	type MapLibreModule,
+} from "./mapLibre.ts";
 import type { Course, Hole, LatLng } from "./types.ts";
 import { generateId } from "./utils.ts";
 
-type MapLibreModule = typeof import("maplibre-gl");
-type MapLibreMap = import("maplibre-gl").Map;
-type MapLibreMarker = import("maplibre-gl").Marker;
-
 let mapContainer: HTMLDivElement;
-let maplibregl: MapLibreModule | null = null;
-let maplibreLoad: Promise<MapLibreModule> | null = null;
 let map: MapLibreMap | null = null;
 let markers: MapLibreMarker[] = [];
 let watchId: number | null = null;
@@ -27,23 +28,6 @@ let shareCode: string | null = $state(null);
 let mapReady = $state(false);
 
 const canSave = $derived(holes.length > 0 && courseName.trim().length > 0);
-
-const loadMapLibre = async (): Promise<MapLibreModule> => {
-	if (maplibregl) return maplibregl;
-	maplibreLoad ??= Promise.all([
-		import("maplibre-gl"),
-		import("maplibre-gl/dist/maplibre-gl.css"),
-	])
-		.then(([module]) => {
-			maplibregl = module;
-			return module;
-		})
-		.catch((error) => {
-			maplibreLoad = null;
-			throw error;
-		});
-	return maplibreLoad;
-};
 
 const invalidateShareCode = (showStatus = true) => {
 	if (shareCode && showStatus) {
@@ -143,7 +127,7 @@ const refreshMarkers = () => {
 		marker.remove();
 	}
 	markers = [];
-	const maplibre = maplibregl;
+	const maplibre = getMapLibre();
 	if (!map || !maplibre) return;
 
 	holes.forEach((hole) => {
